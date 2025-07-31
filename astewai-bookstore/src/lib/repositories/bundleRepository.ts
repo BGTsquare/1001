@@ -1,8 +1,9 @@
 
-import { supabase } from "../supabase/client";
+import { createClient } from "../supabase/client";
 import { Bundle } from "@/types";
 
 export async function getBundles(): Promise<Bundle[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("bundles")
     .select(`
@@ -23,6 +24,7 @@ export async function getBundles(): Promise<Bundle[]> {
 }
 
 export async function getBundleById(id: string): Promise<Bundle> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("bundles")
     .select(`

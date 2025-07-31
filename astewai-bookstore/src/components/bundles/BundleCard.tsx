@@ -17,7 +17,7 @@ export function BundleCard({ bundle }: BundleCardProps) {
       <CardContent>
         <p className="text-sm text-muted-foreground">{bundle.description}</p>
         <p className="text-lg font-bold mt-4">${bundle.price}</p>
-        <p className="text-sm text-muted-foreground">{bundle.books.length} books</p>
+        <p className="text-sm text-muted-foreground">{bundle.books?.length || 0} books</p>
       </CardContent>
       <CardFooter>
         <Link href={`/bundles/${bundle.id}`} passHref>
