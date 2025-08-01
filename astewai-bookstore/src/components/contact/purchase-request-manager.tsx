@@ -223,6 +223,21 @@ function PurchaseRequestCard({
     ? contacts.find(c => c.contact_type === request.preferred_contact_method && c.is_primary)
     : contacts.find(c => c.is_primary);
 
+  const generateContactMessage = (request: PurchaseRequest) => {
+    const itemName = request.book?.title || request.bundle?.title || 'Unknown Item';
+    const itemType = request.item_type === 'book' ? 'Book' : 'Bundle';
+    
+    let message = `Hi! Regarding your purchase request for the ${itemType.toLowerCase()}: "${itemName}" (${request.amount}).`;
+    
+    if (request.user_message) {
+      message += `\n\nYour message: ${request.user_message}`;
+    }
+    
+    message += `\n\nRequest ID: ${request.id}`;
+    
+    return message;
+  };
+
   const contactMessage = generateContactMessage(request);
 
   return (

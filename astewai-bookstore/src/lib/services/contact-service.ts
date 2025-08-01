@@ -1,9 +1,11 @@
 import { ContactRepository } from '@/lib/repositories/contact-repository';
 import { validateContactValue, formatContactValue } from '@/lib/validation/contact-validation';
+import { createNotificationService } from './notification-service';
 import type { AdminContactInfo, PurchaseRequest, ContactMethod, AdminContactForm, PurchaseRequestForm } from '@/types';
 
 export class ContactService {
   private contactRepository = new ContactRepository();
+  private notificationService = createNotificationService();
 
   // Admin contact info methods
   async getAdminContactInfo(adminId: string): Promise<AdminContactInfo[]> {
@@ -104,7 +106,17 @@ export class ContactService {
       user_message: requestForm.userMessage || null,
     };
 
-    return this.contactRepository.createPurchaseRequest(request);
+    const createdRequest = await this.contactRepository.createPurchaseRequest(request);
+    
+    // Send notification to admins about the new purchase request
+    try {
+      await this.notificationService.notifyAdminsOfNewPurchaseRequest(createdRequest);
+    } catch (error) {
+      // Log error but don't fail the request creation
+      console.error('Failed to send admin notification for purchase request:', error);
+    }
+
+    return createdRequest;
   }
 
   async updatePurchaseRequestStatus(

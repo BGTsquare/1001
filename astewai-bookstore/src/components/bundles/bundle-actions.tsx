@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, Loader2, Package, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
-import { PurchaseRequestFormComponent } from '@/components/contact'
+import { PurchaseRequestFormComponent, PurchaseContactModal, QuickContactButtons } from '@/components/contact'
 import type { Bundle } from '@/types'
 import { toast } from 'sonner'
 
@@ -82,15 +82,40 @@ export function BundleActions({ bundle }: BundleActionsProps) {
         )}
       </Button>
       
-      <PurchaseRequestFormComponent
+      <div className="grid grid-cols-2 gap-2">
+        <PurchaseRequestFormComponent
+          item={bundle}
+          itemType="bundle"
+          trigger={
+            <Button variant="outline" className="w-full" size="lg">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Request Purchase
+            </Button>
+          }
+        />
+        
+        <PurchaseContactModal
+          item={bundle}
+          itemType="bundle"
+          trigger={
+            <Button variant="outline" className="w-full" size="lg">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Contact Admin
+            </Button>
+          }
+          onContactInitiated={(method) => {
+            console.log(`Contact initiated via ${method} for bundle ${bundle.id}`);
+          }}
+        />
+      </div>
+      
+      <QuickContactButtons
         item={bundle}
         itemType="bundle"
-        trigger={
-          <Button variant="outline" className="w-full" size="lg">
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Contact Admin
-          </Button>
-        }
+        onContactInitiated={(method) => {
+          console.log(`Quick contact initiated via ${method} for bundle ${bundle.id}`);
+        }}
+        className="border rounded-lg p-3"
       />
     </div>
   )
