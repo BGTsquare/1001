@@ -1,9 +1,11 @@
 // Library data models and operations
-export { LibraryRepository, libraryRepository, clientLibraryRepository } from '../repositories/library-repository'
-export type { LibrarySearchOptions, ReadingProgressUpdate } from '../repositories/library-repository'
+export { LibraryRepository, libraryRepository } from '../repositories/library-repository'
+export { clientLibraryRepository } from '../repositories/client-library-repository'
 
 export { LibraryService, libraryService, clientLibraryService } from '../services/library-service'
-export type { LibraryStats, LibraryServiceOptions } from '../services/library-service'
+
+// Export types from the shared types file
+export type { LibrarySearchOptions, ReadingProgressUpdate, LibraryStats, LibraryServiceOptions } from '../types/library'
 
 // Library validation functions
 export {

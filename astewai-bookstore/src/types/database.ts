@@ -327,6 +327,106 @@ export type Database = {
           }
         ]
       }
+      admin_contact_info: {
+        Row: {
+          id: string
+          admin_id: string
+          contact_type: 'telegram' | 'whatsapp' | 'email'
+          contact_value: string
+          display_name: string | null
+          is_active: boolean
+          is_primary: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          contact_type: 'telegram' | 'whatsapp' | 'email'
+          contact_value: string
+          display_name?: string | null
+          is_active?: boolean
+          is_primary?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          contact_type?: 'telegram' | 'whatsapp' | 'email'
+          contact_value?: string
+          display_name?: string | null
+          is_active?: boolean
+          is_primary?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_contact_info_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      purchase_requests: {
+        Row: {
+          id: string
+          user_id: string
+          item_type: 'book' | 'bundle'
+          item_id: string
+          amount: number
+          status: 'pending' | 'contacted' | 'approved' | 'rejected' | 'completed'
+          preferred_contact_method: 'telegram' | 'whatsapp' | 'email' | null
+          user_message: string | null
+          admin_notes: string | null
+          contacted_at: string | null
+          responded_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          item_type: 'book' | 'bundle'
+          item_id: string
+          amount: number
+          status?: 'pending' | 'contacted' | 'approved' | 'rejected' | 'completed'
+          preferred_contact_method?: 'telegram' | 'whatsapp' | 'email' | null
+          user_message?: string | null
+          admin_notes?: string | null
+          contacted_at?: string | null
+          responded_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          item_type?: 'book' | 'bundle'
+          item_id?: string
+          amount?: number
+          status?: 'pending' | 'contacted' | 'approved' | 'rejected' | 'completed'
+          preferred_contact_method?: 'telegram' | 'whatsapp' | 'email' | null
+          user_message?: string | null
+          admin_notes?: string | null
+          contacted_at?: string | null
+          responded_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

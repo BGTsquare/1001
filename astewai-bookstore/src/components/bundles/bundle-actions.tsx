@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Loader2, Package } from 'lucide-react'
+import { ShoppingCart, Loader2, Package, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
+import { PurchaseRequestFormComponent } from '@/components/contact'
 import type { Bundle } from '@/types'
 import { toast } from 'sonner'
 
@@ -80,6 +81,17 @@ export function BundleActions({ bundle }: BundleActionsProps) {
           </>
         )}
       </Button>
+      
+      <PurchaseRequestFormComponent
+        item={bundle}
+        itemType="bundle"
+        trigger={
+          <Button variant="outline" className="w-full" size="lg">
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Contact Admin
+          </Button>
+        }
+      />
     </div>
   )
 }

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, BookPlus, Loader2 } from 'lucide-react'
+import { ShoppingCart, BookPlus, Loader2, BookOpen, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
+import { PurchaseRequestFormComponent } from '@/components/contact'
 import type { Book } from '@/types'
 import { toast } from 'sonner'
 
@@ -17,6 +18,36 @@ export function BookActions({ book }: BookActionsProps) {
   const router = useRouter()
   const [isAddingToLibrary, setIsAddingToLibrary] = useState(false)
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const [isOwned, setIsOwned] = useState(false)
+  const [isCheckingOwnership, setIsCheckingOwnership] = useState(true)
+
+  // Check if user owns the book
+  useEffect(() => {
+    const checkOwnership = async () => {
+      if (!user) {
+        setIsCheckingOwnership(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/library/ownership/${book.id}`)
+        if (response.ok) {
+          const result = await response.json()
+          setIsOwned(result.owned || false)
+        }
+      } catch (error) {
+        console.error('Error checking book ownership:', error)
+      } finally {
+        setIsCheckingOwnership(false)
+      }
+    }
+
+    checkOwnership()
+  }, [user, book.id])
+
+  const handleReadNow = () => {
+    router.push(`/books/${book.id}/read`)
+  }
 
   const handleAddToLibrary = async () => {
     if (!user) {
@@ -44,6 +75,7 @@ export function BookActions({ book }: BookActionsProps) {
       }
 
       toast.success('Book added to your library!')
+      setIsOwned(true) // Update ownership state
       router.push('/library')
     } catch (error) {
       console.error('Error adding book to library:', error)
@@ -96,6 +128,30 @@ export function BookActions({ book }: BookActionsProps) {
     }
   }
 
+  // Show loading state while checking ownership
+  if (isCheckingOwnership) {
+    return (
+      <Button disabled className="w-full" size="lg">
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        Loading...
+      </Button>
+    )
+  }
+
+  // If user owns the book, show "Read Now" button
+  if (isOwned) {
+    return (
+      <Button
+        onClick={handleReadNow}
+        className="w-full"
+        size="lg"
+      >
+        <BookOpen className="h-4 w-4 mr-2" />
+        Read Now
+      </Button>
+    )
+  }
+
   if (book.is_free) {
     return (
       <Button
@@ -139,6 +195,17 @@ export function BookActions({ book }: BookActionsProps) {
           </>
         )}
       </Button>
+      
+      <PurchaseRequestFormComponent
+        item={book}
+        itemType="book"
+        trigger={
+          <Button variant="outline" className="w-full" size="lg">
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Contact Admin
+          </Button>
+        }
+      />
       
       <Button
         onClick={handleAddToLibrary}

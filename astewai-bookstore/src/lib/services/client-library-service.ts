@@ -1,20 +1,13 @@
-import { libraryRepository } from '@/lib/repositories/library-repository'
 import { clientLibraryRepository } from '@/lib/repositories/client-library-repository'
-import { bookRepository } from '@/lib/repositories/book-repository'
 import { clientBookRepository } from '@/lib/repositories/client-book-repository'
 import type { UserLibrary, Book } from '@/types'
-import type { LibrarySearchOptions, ReadingProgressUpdate, LibraryStats, LibraryServiceOptions } from '@/lib/types/library'
+import type { LibrarySearchOptions, ReadingProgressUpdate, LibraryStats } from '@/lib/types/library'
 
 type LibraryStatus = 'owned' | 'pending' | 'completed'
 
-export class LibraryService {
-  private repository: typeof libraryRepository | typeof clientLibraryRepository
-  private bookRepo: typeof bookRepository | typeof clientBookRepository
-
-  constructor(options: LibraryServiceOptions = {}) {
-    this.repository = options.isClient ? clientLibraryRepository : libraryRepository
-    this.bookRepo = options.isClient ? clientBookRepository : bookRepository
-  }
+export class ClientLibraryService {
+  private repository = clientLibraryRepository
+  private bookRepo = clientBookRepository
 
   /**
    * Add a book to user's library with validation
@@ -58,62 +51,6 @@ export class LibraryService {
       }
     } catch (error) {
       console.error('Error in addBookToLibrary:', error)
-      return {
-        success: false,
-        error: 'An unexpected error occurred'
-      }
-    }
-  }
-
-  /**
-   * Add multiple books to library (for bundle purchases)
-   */
-  async addBooksToLibrary(userId: string, bookIds: string[], status: LibraryStatus = 'owned'): Promise<{
-    success: boolean
-    data?: UserLibrary[]
-    error?: string
-    skipped?: string[]
-  }> {
-    try {
-      // Validate all books exist
-      const books = await Promise.all(
-        bookIds.map(id => this.bookRepo.getById(id))
-      )
-      
-      const invalidBooks = bookIds.filter((_, index) => !books[index])
-      if (invalidBooks.length > 0) {
-        return {
-          success: false,
-          error: `Some books were not found: ${invalidBooks.join(', ')}`
-        }
-      }
-
-      // Check for existing books
-      const existingChecks = await Promise.all(
-        bookIds.map(bookId => this.repository.isBookInLibrary(userId, bookId))
-      )
-      
-      const newBookIds = bookIds.filter((_, index) => !existingChecks[index])
-      const skippedBookIds = bookIds.filter((_, index) => existingChecks[index])
-
-      if (newBookIds.length === 0) {
-        return {
-          success: true,
-          data: [],
-          skipped: skippedBookIds,
-          error: 'All books are already in your library'
-        }
-      }
-
-      const libraryItems = await this.repository.addBooksToLibrary(userId, newBookIds, status)
-      
-      return {
-        success: true,
-        data: libraryItems,
-        skipped: skippedBookIds
-      }
-    } catch (error) {
-      console.error('Error in addBooksToLibrary:', error)
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -408,74 +345,6 @@ export class LibraryService {
   }
 
   /**
-   * Get reading recommendations based on library
-   */
-  async getReadingRecommendations(userId: string, limit: number = 5): Promise<{
-    success: boolean
-    data?: {
-      continueReading: UserLibrary[]
-      recentlyAdded: UserLibrary[]
-      suggestions: Book[]
-    }
-    error?: string
-  }> {
-    try {
-      const [inProgress, recentlyAdded, userLibrary] = await Promise.all([
-        this.repository.getBooksInProgress(userId),
-        this.repository.getRecentlyAdded(userId, limit),
-        this.repository.getUserLibrary(userId)
-      ])
-
-      // Get categories and tags from user's library for suggestions
-      const userCategories = [...new Set(
-        userLibrary
-          .map(item => item.book?.category)
-          .filter(Boolean)
-      )] as string[]
-
-      const userTags = [...new Set(
-        userLibrary
-          .flatMap(item => item.book?.tags || [])
-          .filter(Boolean)
-      )] as string[]
-
-      // Get book suggestions based on user's preferences
-      let suggestions: Book[] = []
-      if (userCategories.length > 0 || userTags.length > 0) {
-        const ownedBookIds = userLibrary.map(item => item.book_id)
-        
-        // Get books from similar categories/tags that user doesn't own
-        const potentialSuggestions = await this.bookRepo.getAll({
-          limit: limit * 2 // Get more to filter out owned books
-        })
-        
-        suggestions = potentialSuggestions
-          .filter(book => !ownedBookIds.includes(book.id))
-          .filter(book => 
-            (book.category && userCategories.includes(book.category)) ||
-            (book.tags && book.tags.some(tag => userTags.includes(tag)))
-          )
-          .slice(0, limit)
-      }
-
-      return {
-        success: true,
-        data: {
-          continueReading: inProgress.slice(0, limit),
-          recentlyAdded: recentlyAdded.slice(0, limit),
-          suggestions
-        }
-      }
-    } catch (error) {
-      console.error('Error in getReadingRecommendations:', error)
-      return {
-        success: false,
-        error: 'An unexpected error occurred'
-      }
-    }
-  }
-
-  /**
    * Check if user owns a book
    */
   async checkBookOwnership(userId: string, bookId: string): Promise<{
@@ -539,6 +408,5 @@ export class LibraryService {
   }
 }
 
-// Export singleton instances for convenience
-export const libraryService = new LibraryService()
-export const clientLibraryService = new LibraryService({ isClient: true })
+// Export singleton instance for convenience
+export const clientLibraryService = new ClientLibraryService()

@@ -13,6 +13,11 @@ export type UserLibrary = Database['public']['Tables']['user_library']['Row'] & 
 export type BlogPost = Database['public']['Tables']['blog_posts']['Row']
 export type Purchase = Database['public']['Tables']['purchases']['Row']
 export type Review = Database['public']['Tables']['reviews']['Row']
+export type AdminContactInfo = Database['public']['Tables']['admin_contact_info']['Row']
+export type PurchaseRequest = Database['public']['Tables']['purchase_requests']['Row'] & {
+  book?: Book
+  bundle?: Bundle
+}
 
 // Extended user type with email from auth
 export interface User extends Profile {
@@ -62,4 +67,31 @@ export interface BlogFilters {
   tags?: string[];
   published?: boolean;
   search?: string;
+}
+
+// Contact system types
+export type ContactMethod = 'telegram' | 'whatsapp' | 'email';
+
+export interface ContactInfo {
+  type: ContactMethod;
+  value: string;
+  displayName?: string;
+  isActive: boolean;
+  isPrimary: boolean;
+}
+
+export interface PurchaseRequestForm {
+  itemType: 'book' | 'bundle';
+  itemId: string;
+  amount: number;
+  preferredContactMethod?: ContactMethod;
+  userMessage?: string;
+}
+
+export interface AdminContactForm {
+  contactType: ContactMethod;
+  contactValue: string;
+  displayName?: string;
+  isActive: boolean;
+  isPrimary: boolean;
 }

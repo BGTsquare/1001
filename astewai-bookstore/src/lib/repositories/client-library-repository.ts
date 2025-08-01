@@ -1,4 +1,4 @@
-import { createClient as createClientClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import type { UserLibrary, Book } from '@/types'
 import type { Database } from '@/types/database'
 import type { LibrarySearchOptions, ReadingProgressUpdate } from '@/lib/types/library'
@@ -7,27 +7,14 @@ type UserLibraryInsert = Database['public']['Tables']['user_library']['Insert']
 type UserLibraryUpdate = Database['public']['Tables']['user_library']['Update']
 type LibraryStatus = 'owned' | 'pending' | 'completed'
 
-export class LibraryRepository {
-  private supabase: any
-  private isClient: boolean
-
-  constructor(isClient = false) {
-    this.isClient = isClient
-    if (isClient) {
-      this.supabase = createClientClient()
-    } else {
-      // For server-side, we'll initialize lazily to avoid import issues
-      this.supabase = null
-    }
-  }
+export class ClientLibraryRepository {
+  private supabase = createClient()
 
   /**
    * Add a book to user's library
    */
   async addToLibrary(userId: string, bookId: string, status: LibraryStatus = 'owned'): Promise<UserLibrary | null> {
     try {
-      const supabase = await this.getSupabaseClient()
-      
       // Check if book already exists in library
       const existing = await this.getLibraryItem(userId, bookId)
       if (existing) {
@@ -35,7 +22,7 @@ export class LibraryRepository {
         return existing
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .insert({
           user_id: userId,
@@ -70,8 +57,7 @@ export class LibraryRepository {
    */
   async removeFromLibrary(userId: string, bookId: string): Promise<boolean> {
     try {
-      const supabase = await this.getSupabaseClient()
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('user_library')
         .delete()
         .eq('user_id', userId)
@@ -94,8 +80,7 @@ export class LibraryRepository {
    */
   async getUserLibrary(userId: string, options: LibrarySearchOptions = {}): Promise<UserLibrary[]> {
     try {
-      const supabase = await this.getSupabaseClient()
-      let query = supabase
+      let query = this.supabase
         .from('user_library')
         .select(`
           *,
@@ -151,8 +136,7 @@ export class LibraryRepository {
    */
   async getLibraryItem(userId: string, bookId: string): Promise<UserLibrary | null> {
     try {
-      const supabase = await this.getSupabaseClient()
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .select(`
           *,
@@ -190,8 +174,6 @@ export class LibraryRepository {
     progressUpdate: ReadingProgressUpdate
   ): Promise<UserLibrary | null> {
     try {
-      const supabase = await this.getSupabaseClient()
-      
       const updateData: any = {
         progress: Math.max(0, Math.min(100, progressUpdate.progress)), // Clamp between 0-100
         updated_at: new Date().toISOString()
@@ -209,7 +191,7 @@ export class LibraryRepository {
         updateData.status = progressUpdate.status || 'owned'
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .update(updateData)
         .eq('user_id', userId)
@@ -240,8 +222,6 @@ export class LibraryRepository {
    */
   async updateBookStatus(userId: string, bookId: string, status: LibraryStatus): Promise<UserLibrary | null> {
     try {
-      const supabase = await this.getSupabaseClient()
-      
       const updateData: any = {
         status,
         updated_at: new Date().toISOString()
@@ -252,7 +232,7 @@ export class LibraryRepository {
         updateData.progress = 100
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .update(updateData)
         .eq('user_id', userId)
@@ -289,10 +269,8 @@ export class LibraryRepository {
     inProgress: number
   }> {
     try {
-      const supabase = await this.getSupabaseClient()
-      
       // Get all library items for the user
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .select('status, progress')
         .eq('user_id', userId)
@@ -344,8 +322,7 @@ export class LibraryRepository {
    */
   async getBooksInProgress(userId: string): Promise<UserLibrary[]> {
     try {
-      const supabase = await this.getSupabaseClient()
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('user_library')
         .select(`
           *,
@@ -373,105 +350,11 @@ export class LibraryRepository {
   }
 
   /**
-   * Get recently added books
-   */
-  async getRecentlyAdded(userId: string, limit: number = 10): Promise<UserLibrary[]> {
-    return this.getUserLibrary(userId, { 
-      limit, 
-      sortBy: 'added_at', 
-      sortOrder: 'desc' 
-    })
-  }
-
-  /**
-   * Get recently read books (by last update)
-   */
-  async getRecentlyRead(userId: string, limit: number = 10): Promise<UserLibrary[]> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      const { data, error } = await supabase
-        .from('user_library')
-        .select(`
-          *,
-          books (*)
-        `)
-        .eq('user_id', userId)
-        .gt('progress', 0)
-        .order('updated_at', { ascending: false })
-        .limit(limit)
-
-      if (error) {
-        console.error('Error fetching recently read books:', error)
-        return []
-      }
-
-      return data.map(item => ({
-        ...item,
-        book: item.books
-      })) as UserLibrary[]
-    } catch (error) {
-      console.error('Unexpected error fetching recently read books:', error)
-      return []
-    }
-  }
-
-  /**
-   * Bulk add books to library (useful for bundle purchases)
-   */
-  async addBooksToLibrary(userId: string, bookIds: string[], status: LibraryStatus = 'owned'): Promise<UserLibrary[]> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      // Filter out books that are already in the library
-      const existingBooks = await Promise.all(
-        bookIds.map(bookId => this.isBookInLibrary(userId, bookId))
-      )
-      
-      const newBookIds = bookIds.filter((_, index) => !existingBooks[index])
-      
-      if (newBookIds.length === 0) {
-        console.warn('All books already exist in user library')
-        return []
-      }
-
-      const insertData = newBookIds.map(bookId => ({
-        user_id: userId,
-        book_id: bookId,
-        status,
-        progress: 0,
-        last_read_position: null
-      }))
-
-      const { data, error } = await supabase
-        .from('user_library')
-        .insert(insertData)
-        .select(`
-          *,
-          books (*)
-        `)
-
-      if (error) {
-        console.error('Error bulk adding books to library:', error)
-        return []
-      }
-
-      return data.map(item => ({
-        ...item,
-        book: item.books
-      })) as UserLibrary[]
-    } catch (error) {
-      console.error('Unexpected error bulk adding books to library:', error)
-      return []
-    }
-  }
-
-  /**
    * Get library count for pagination
    */
   async getLibraryCount(userId: string, status?: LibraryStatus): Promise<number> {
     try {
-      const supabase = await this.getSupabaseClient()
-      let query = supabase
+      let query = this.supabase
         .from('user_library')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -493,20 +376,7 @@ export class LibraryRepository {
       return 0
     }
   }
-
-  private async getSupabaseClient() {
-    if (this.isClient) {
-      return this.supabase
-    } else {
-      // Lazy initialization for server client to avoid import issues
-      if (!this.supabase) {
-        const { createClient } = await import('@/lib/supabase/server')
-        this.supabase = await createClient()
-      }
-      return this.supabase
-    }
-  }
 }
 
-// Export singleton instances for convenience
-export const libraryRepository = new LibraryRepository()
+// Export singleton instance for convenience
+export const clientLibraryRepository = new ClientLibraryRepository()

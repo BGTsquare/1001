@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Bundle, BlogPost, UserLibrary, Purchase } from '@/types'
 import { bookRepository } from '@/lib/books'
+import { libraryRepository } from '@/lib/library'
 
 // Book operations - using the new book repository
 export async function getBooks(filters?: {
@@ -124,80 +125,22 @@ export async function getBlogPostById(id: string) {
   return data as BlogPost
 }
 
-// User library operations
+// User library operations - using the new library repository
+import { libraryRepository } from '@/lib/repositories/library-repository'
+
 export async function getUserLibrary(userId: string, status?: 'owned' | 'pending' | 'completed') {
-  const supabase = await createClient()
-  let query = supabase
-    .from('user_library')
-    .select(`
-      *,
-      books (*)
-    `)
-    .eq('user_id', userId)
-
-  if (status) {
-    query = query.eq('status', status)
-  }
-
-  const { data, error } = await query.order('added_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching user library:', error)
-    return []
-  }
-
-  return data.map(item => ({
-    ...item,
-    book: item.books
-  })) as UserLibrary[]
+  return await libraryRepository.getUserLibrary(userId, { status })
 }
 
 export async function addToLibrary(userId: string, bookId: string, status: 'owned' | 'pending' = 'owned') {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('user_library')
-    .insert({
-      user_id: userId,
-      book_id: bookId,
-      status
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error adding to library:', error)
-    return null
-  }
-
-  return data
+  return await libraryRepository.addToLibrary(userId, bookId, status)
 }
 
 export async function updateReadingProgress(userId: string, bookId: string, progress: number, position?: string) {
-  const supabase = await createClient()
-  const updateData: any = { progress }
-  
-  if (position) {
-    updateData.last_read_position = position
-  }
-
-  if (progress >= 100) {
-    updateData.status = 'completed'
-  }
-
-  const { data, error } = await supabase
-    .from('user_library')
-    .update(updateData)
-    .eq('user_id', userId)
-    .eq('book_id', bookId)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error updating reading progress:', error)
-    return null
-  }
-
-  return data
+  return await libraryRepository.updateReadingProgress(userId, bookId, {
+    progress,
+    lastReadPosition: position
+  })
 }
 
 // Purchase operations
