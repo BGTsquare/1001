@@ -51,6 +51,15 @@ export function Header() {
                 </Button>
               </Link>
               
+              {/* Admin Dashboard Link - Only show for admin users */}
+              {profile?.role === 'admin' && (
+                <Link href={ROUTES.ADMIN.DASHBOARD}>
+                  <Button variant="ghost" size="sm">
+                    Admin
+                  </Button>
+                </Link>
+              )}
+              
               {/* Profile dropdown or link */}
               <div className="flex items-center space-x-2">
                 <Link href={ROUTES.PROFILE}>

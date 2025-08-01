@@ -13,7 +13,9 @@
     "type-check": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "admin:check": "node scripts/check-users.js",
+    "admin:make": "node scripts/make-admin.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",
