@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContactButton } from './contact-display';
@@ -20,7 +22,10 @@ import {
   Loader2,
   User,
   DollarSign,
-  Calendar
+  Calendar,
+  Search,
+  Filter,
+  Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -28,6 +33,9 @@ import { format } from 'date-fns';
 export function PurchaseRequestManager() {
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [itemTypeFilter, setItemTypeFilter] = useState<string>('all');
   const queryClient = useQueryClient();
 
   // Fetch purchase requests
@@ -120,12 +128,43 @@ export function PurchaseRequestManager() {
     return message;
   };
 
-  const filteredRequests = {
-    pending: requests.filter(r => r.status === 'pending'),
-    contacted: requests.filter(r => r.status === 'contacted'),
-    approved: requests.filter(r => r.status === 'approved'),
-    completed: requests.filter(r => r.status === 'completed'),
-    rejected: requests.filter(r => r.status === 'rejected'),
+  // Filter requests based on search and filters
+  const filteredRequests = requests.filter(request => {
+    const itemName = request.book?.title || request.bundle?.title || '';
+    const matchesSearch = !searchTerm || 
+      itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    const matchesItemType = itemTypeFilter === 'all' || request.item_type === itemTypeFilter;
+    
+    return matchesSearch && matchesStatus && matchesItemType;
+  });
+
+  const requestStats = {
+    total: requests.length,
+    pending: requests.filter(r => r.status === 'pending').length,
+    contacted: requests.filter(r => r.status === 'contacted').length,
+    approved: requests.filter(r => r.status === 'approved').length,
+    completed: requests.filter(r => r.status === 'completed').length,
+    rejected: requests.filter(r => r.status === 'rejected').length,
+    totalValue: requests
+      .filter(r => ['approved', 'completed'].includes(r.status))
+      .reduce((sum, r) => sum + r.amount, 0),
+    recentRequests: requests.filter(r => {
+      const createdAt = new Date(r.created_at);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return createdAt > sevenDaysAgo;
+    }).length
+  };
+
+  const filteredRequestsByStatus = {
+    pending: filteredRequests.filter(r => r.status === 'pending'),
+    contacted: filteredRequests.filter(r => r.status === 'contacted'),
+    approved: filteredRequests.filter(r => r.status === 'approved'),
+    completed: filteredRequests.filter(r => r.status === 'completed'),
+    rejected: filteredRequests.filter(r => r.status === 'rejected'),
   };
 
   if (isLoading) {
@@ -141,34 +180,128 @@ export function PurchaseRequestManager() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Purchase Requests</h2>
-        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-          <span>Total: {requests.length}</span>
-          <span>Pending: {filteredRequests.pending.length}</span>
+        <div>
+          <h2 className="text-2xl font-bold">Purchase Request Management</h2>
+          <p className="text-muted-foreground">Manage and approve purchase requests</p>
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-orange-600" />
+              <div>
+                <p className="text-2xl font-bold">{requestStats.pending}</p>
+                <p className="text-xs text-muted-foreground">Pending Requests</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <div>
+                <p className="text-2xl font-bold">{requestStats.completed}</p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-2xl font-bold">${requestStats.totalValue.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Total Value</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Activity className="h-4 w-4 text-purple-600" />
+              <div>
+                <p className="text-2xl font-bold">{requestStats.recentRequests}</p>
+                <p className="text-xs text-muted-foreground">This Week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by item name or request ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="contacted">Contacted</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={itemTypeFilter} onValueChange={setItemTypeFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Item Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="book">Books</SelectItem>
+                <SelectItem value="bundle">Bundles</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Requests Tabs */}
       <Tabs defaultValue="pending" className="space-y-4">
         <TabsList>
           <TabsTrigger value="pending">
-            Pending ({filteredRequests.pending.length})
+            Pending ({filteredRequestsByStatus.pending.length})
           </TabsTrigger>
           <TabsTrigger value="contacted">
-            Contacted ({filteredRequests.contacted.length})
+            Contacted ({filteredRequestsByStatus.contacted.length})
           </TabsTrigger>
           <TabsTrigger value="approved">
-            Approved ({filteredRequests.approved.length})
+            Approved ({filteredRequestsByStatus.approved.length})
           </TabsTrigger>
           <TabsTrigger value="completed">
-            Completed ({filteredRequests.completed.length})
+            Completed ({filteredRequestsByStatus.completed.length})
           </TabsTrigger>
           <TabsTrigger value="rejected">
-            Rejected ({filteredRequests.rejected.length})
+            Rejected ({filteredRequestsByStatus.rejected.length})
           </TabsTrigger>
         </TabsList>
 
-        {Object.entries(filteredRequests).map(([status, statusRequests]) => (
+        {Object.entries(filteredRequestsByStatus).map(([status, statusRequests]) => (
           <TabsContent key={status} value={status}>
             {statusRequests.length === 0 ? (
               <Card>

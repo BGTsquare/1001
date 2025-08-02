@@ -21,6 +21,7 @@ import { BundleManager } from './bundle-manager'
 import { AdminContactManager } from '../contact/admin-contact-manager'
 import { PurchaseRequestManager } from '../contact/purchase-request-manager'
 import { ContactPurchaseManager } from './contact-purchase-manager'
+import { UserManager } from './user-manager'
 
 interface DashboardStats {
   totalBooks: number
@@ -266,15 +267,22 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
           </div>
         )}
 
+        {/* User Management Section */}
+        {selectedSection === 'users' && (
+          <div>
+            <UserManager />
+          </div>
+        )}
+
         {/* Purchase Request Management Section */}
         {selectedSection === 'purchases' && (
           <div>
-            <ContactPurchaseManager />
+            <PurchaseRequestManager />
           </div>
         )}
 
         {/* Placeholder content for other sections */}
-        {!['overview', 'books', 'approval', 'bundles', 'contact', 'purchases'].includes(selectedSection) && (
+        {!['overview', 'books', 'approval', 'bundles', 'contact', 'purchases', 'users'].includes(selectedSection) && (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2 capitalize">{selectedSection}</h2>
