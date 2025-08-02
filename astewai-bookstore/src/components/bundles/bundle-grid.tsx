@@ -123,14 +123,14 @@ export function BundleGrid({
 
       {/* Loading State */}
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid-responsive-bundles">
           {Array.from({ length: itemsPerPage }).map((_, index) => (
             <div
               key={index}
               className="animate-pulse"
             >
               <div className="bg-muted rounded-lg aspect-[4/3] mb-4" />
-              <div className="space-y-2">
+              <div className="space-mobile-tight">
                 <div className="bg-muted h-4 rounded w-3/4" />
                 <div className="bg-muted h-3 rounded w-1/2" />
                 <div className="bg-muted h-3 rounded w-full" />
@@ -175,7 +175,7 @@ export function BundleGrid({
 
       {/* Bundles Grid */}
       {!isLoading && !error && bundles.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid-responsive-bundles">
           {bundles.map((bundle) => (
             <BundleCard key={bundle.id} bundle={bundle} />
           ))}

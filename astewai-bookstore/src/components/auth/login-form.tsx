@@ -56,54 +56,56 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="card-mobile w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>
-          <h1>Sign In</h1>
+          <h1 className="heading-responsive-md">Sign In</h1>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-mobile-base">
           Enter your email and password to access your account
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="form-mobile">
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            <div className="p-3 text-mobile-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
               {error}
             </div>
           )}
           
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+          <div className="space-mobile-tight">
+            <label htmlFor="email" className="text-mobile-sm font-medium block">
               Email
             </label>
             <Input
               id="email"
               type="email"
               placeholder="Enter your email"
+              className="text-mobile-base touch-target"
               {...register('email')}
               aria-invalid={errors.email ? 'true' : 'false'}
             />
             {errors.email && (
-              <p className="text-sm text-red-600" role="alert">
+              <p className="text-mobile-sm text-red-600" role="alert">
                 {errors.email.message}
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+          <div className="space-mobile-tight">
+            <label htmlFor="password" className="text-mobile-sm font-medium block">
               Password
             </label>
             <Input
               id="password"
               type="password"
               placeholder="Enter your password"
+              className="text-mobile-base touch-target"
               {...register('password')}
               aria-invalid={errors.password ? 'true' : 'false'}
             />
             {errors.password && (
-              <p className="text-sm text-red-600" role="alert">
+              <p className="text-mobile-sm text-red-600" role="alert">
                 {errors.password.message}
               </p>
             )}
@@ -111,24 +113,24 @@ export function LoginForm({ redirectTo = '/' }: LoginFormProps) {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full button-mobile"
             disabled={isLoading}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
 
-          <div className="text-center space-y-2">
+          <div className="text-center space-mobile-tight">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-primary hover:underline"
+              className="text-mobile-sm text-primary hover:underline touch-target inline-block"
             >
               Forgot your password?
             </Link>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-mobile-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link
                 href="/auth/register"
-                className="text-primary hover:underline"
+                className="text-primary hover:underline touch-target"
               >
                 Sign up
               </Link>

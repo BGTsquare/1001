@@ -300,32 +300,32 @@ export function BookReader({
   }
 
   return (
-    <div className={`min-h-screen ${getThemeClasses()}`}>
+    <div className={`layout-mobile ${getThemeClasses()}`}>
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-top">
+        <div className="container-mobile flex h-12 sm:h-14 items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 touch-target flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
             
-            <div className="hidden sm:block">
-              <h1 className="font-semibold truncate max-w-[200px]">{book.title}</h1>
-              <p className="text-sm text-muted-foreground">by {book.author}</p>
+            <div className="hidden sm:block min-w-0 flex-1">
+              <h1 className="font-semibold truncate text-mobile-base">{book.title}</h1>
+              <p className="text-mobile-xs text-muted-foreground truncate">by {book.author}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Progress indicator */}
             <div className="hidden sm:flex items-center gap-2 min-w-[120px]">
               <Progress value={currentProgress} className="w-20" />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-mobile-xs text-muted-foreground">
                 {Math.round(currentProgress)}%
               </span>
             </div>
@@ -336,6 +336,7 @@ export function BookReader({
               size="sm"
               onClick={addBookmark}
               title="Add bookmark"
+              className="touch-target"
             >
               <BookmarkPlus className="h-4 w-4" />
             </Button>
@@ -345,6 +346,7 @@ export function BookReader({
               size="sm"
               onClick={() => setShowBookmarks(!showBookmarks)}
               title="View bookmarks"
+              className="touch-target"
             >
               <Bookmark className="h-4 w-4" />
             </Button>
@@ -354,6 +356,7 @@ export function BookReader({
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
               title="Reader settings"
+              className="touch-target"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -363,17 +366,24 @@ export function BookReader({
               size="sm"
               onClick={() => setIsFullscreen(!isFullscreen)}
               title="Toggle fullscreen"
+              className="touch-target hidden sm:flex"
             >
               {isFullscreen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
           </div>
         </div>
 
-        {/* Mobile progress bar */}
-        <div className="sm:hidden px-4 pb-2">
+        {/* Mobile header info and progress */}
+        <div className="sm:hidden px-4 pb-3 border-t bg-muted/30">
+          <div className="flex items-center justify-between mb-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-semibold truncate text-mobile-sm">{book.title}</h1>
+              <p className="text-mobile-xs text-muted-foreground truncate">by {book.author}</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <Progress value={currentProgress} className="flex-1" />
-            <span className="text-sm text-muted-foreground">
+            <span className="text-mobile-xs text-muted-foreground min-w-[40px]">
               {Math.round(currentProgress)}%
             </span>
           </div>
@@ -383,11 +393,11 @@ export function BookReader({
       <div className="flex">
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="fixed top-14 right-4 z-40 w-80 max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <Card className="fixed top-12 sm:top-14 right-2 sm:right-4 z-40 w-[calc(100vw-1rem)] sm:w-80 max-h-[calc(100vh-4rem)] overflow-y-auto safe-area-right">
             <CardContent className="p-4">
-              <div className="space-y-4">
+              <div className="space-mobile-normal">
                 <div>
-                  <h3 className="font-semibold mb-2">Reading Settings</h3>
+                  <h3 className="font-semibold mb-2 text-mobile-lg">Reading Settings</h3>
                 </div>
 
                 {/* Font Size */}
@@ -484,11 +494,11 @@ export function BookReader({
 
         {/* Bookmarks Panel */}
         {showBookmarks && (
-          <Card className="fixed top-14 right-4 z-40 w-80 max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <Card className="fixed top-12 sm:top-14 right-2 sm:right-4 z-40 w-[calc(100vw-1rem)] sm:w-80 max-h-[calc(100vh-4rem)] overflow-y-auto safe-area-right">
             <CardContent className="p-4">
-              <div className="space-y-4">
+              <div className="space-mobile-normal">
                 <div>
-                  <h3 className="font-semibold mb-2">Bookmarks</h3>
+                  <h3 className="font-semibold mb-2 text-mobile-lg">Bookmarks</h3>
                 </div>
 
                 {bookmarks.length === 0 ? (
@@ -515,23 +525,23 @@ export function BookReader({
         )}
 
         {/* Main Content */}
-        <main className="flex-1">
+        <main className="content-mobile">
           <div
             ref={contentRef}
             className={`
-              max-w-4xl mx-auto px-4 py-8 h-[calc(100vh-3.5rem)] overflow-y-auto
+              reading-container h-[calc(100vh-6rem)] sm:h-[calc(100vh-3.5rem)] overflow-y-auto
               ${getFontSizeClasses()} ${getFontFamilyClasses()}
             `}
             style={{ scrollBehavior: 'smooth' }}
           >
             {content ? (
               <div 
-                className="prose prose-lg max-w-none"
+                className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-mobile-lg sm:prose-headings:text-xl prose-p:text-mobile-base sm:prose-p:text-base prose-p:leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: content }}
               />
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No content available for this book.</p>
+                <p className="text-muted-foreground text-mobile-base">No content available for this book.</p>
               </div>
             )}
           </div>

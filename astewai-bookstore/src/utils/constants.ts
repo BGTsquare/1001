@@ -10,6 +10,7 @@ export const ROUTES = {
   BUNDLES: '/bundles',
   LIBRARY: '/library',
   BLOG: '/blog',
+  CONTACT: '/contact',
   PROFILE: '/profile',
   AUTH: {
     LOGIN: '/auth/login',

@@ -169,14 +169,14 @@ export function BookGrid({
 
       {/* Loading State */}
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid-responsive-books">
           {Array.from({ length: itemsPerPage }).map((_, index) => (
             <div
               key={index}
               className="animate-pulse"
             >
               <div className="bg-muted rounded-lg aspect-[3/4] mb-4" />
-              <div className="space-y-2">
+              <div className="space-mobile-tight">
                 <div className="bg-muted h-4 rounded w-3/4" />
                 <div className="bg-muted h-3 rounded w-1/2" />
                 <div className="bg-muted h-3 rounded w-full" />
@@ -224,7 +224,7 @@ export function BookGrid({
 
       {/* Books Grid */}
       {!isLoading && !error && books.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid-responsive-books">
           {books.map((book) => (
             <BookCard key={book.id} book={book} />
           ))}
