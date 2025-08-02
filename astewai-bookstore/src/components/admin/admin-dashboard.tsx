@@ -4,17 +4,23 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  BookOpen, 
-  Package, 
-  Users, 
-  ShoppingCart, 
+import {
+  BookOpen,
+  Package,
+  Users,
+  ShoppingCart,
   TrendingUp,
   FileText,
   Settings,
   BarChart3
 } from 'lucide-react'
 import { AdminNavigation } from './admin-navigation'
+import { BookManager } from './book-manager'
+import { BookApproval } from './book-approval'
+import { BundleManager } from './bundle-manager'
+import { AdminContactManager } from '../contact/admin-contact-manager'
+import { PurchaseRequestManager } from '../contact/purchase-request-manager'
+import { ContactPurchaseManager } from './contact-purchase-manager'
 
 interface DashboardStats {
   totalBooks: number
@@ -123,7 +129,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
   return (
     <div className="flex h-full">
       {/* Sidebar Navigation */}
-      <AdminNavigation 
+      <AdminNavigation
         selectedSection={selectedSection}
         onSectionChange={setSelectedSection}
         pendingPurchases={defaultStats.pendingPurchases}
@@ -200,7 +206,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
                             {action.description}
                           </p>
                         </div>
-                        <Button 
+                        <Button
                           variant={action.variant}
                           size="sm"
                           onClick={action.action}
@@ -232,8 +238,43 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
           </div>
         )}
 
+        {/* Books Management Section */}
+        {selectedSection === 'books' && (
+          <div>
+            <BookManager />
+          </div>
+        )}
+
+        {/* Book Approval Section */}
+        {selectedSection === 'approval' && (
+          <div>
+            <BookApproval />
+          </div>
+        )}
+
+        {/* Bundle Management Section */}
+        {selectedSection === 'bundles' && (
+          <div>
+            <BundleManager />
+          </div>
+        )}
+
+        {/* Contact Management Section */}
+        {selectedSection === 'contact' && (
+          <div>
+            <ContactPurchaseManager />
+          </div>
+        )}
+
+        {/* Purchase Request Management Section */}
+        {selectedSection === 'purchases' && (
+          <div>
+            <ContactPurchaseManager />
+          </div>
+        )}
+
         {/* Placeholder content for other sections */}
-        {selectedSection !== 'overview' && (
+        {!['overview', 'books', 'approval', 'bundles', 'contact', 'purchases'].includes(selectedSection) && (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2 capitalize">{selectedSection}</h2>

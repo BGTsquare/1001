@@ -12,7 +12,8 @@ import {
   FileText,
   Settings,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  CheckCircle
 } from 'lucide-react'
 
 interface AdminNavigationProps {
@@ -38,6 +39,12 @@ export function AdminNavigation({
       label: 'Books',
       icon: BookOpen,
       description: 'Manage book catalog'
+    },
+    {
+      id: 'approval',
+      label: 'Approval',
+      icon: CheckCircle,
+      description: 'Review pending books'
     },
     {
       id: 'bundles',
