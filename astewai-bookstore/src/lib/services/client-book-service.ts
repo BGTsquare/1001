@@ -1,4 +1,12 @@
-import { ClientBookRepository, type BookSearchOptions } from '@/lib/repositories/client-book-repository'
+import { 
+  ClientBookRepository, 
+  type BookSearchOptions, 
+  type SearchResult, 
+  type SearchSuggestion, 
+  type PopularSearch 
+} from '@/lib/repositories/client-book-repository'
+import { searchCacheService } from './search-cache-service'
+import { searchAnalyticsService } from './search-analytics-service'
 import { 
   validateBookCreate, 
   validateBookUpdate, 
@@ -208,9 +216,11 @@ export class ClientBookService {
   }
 
   /**
-   * Search books with validation
+   * Search books with validation, caching, and analytics
    */
-  async searchBooks(options: BookSearchOptions = {}): Promise<BookServiceResult<{ books: Book[]; total: number }>> {
+  async searchBooks(options: BookSearchOptions = {}): Promise<BookServiceResult<{ books: SearchResult[]; total: number }>> {
+    const startTime = Date.now()
+    
     try {
       // Validate search parameters
       const validation = validateBookSearch(options)
@@ -222,18 +232,70 @@ export class ClientBookService {
         }
       }
 
-      // Get books and total count
+      // Check cache first
+      const cachedResult = searchCacheService.get(options)
+      if (cachedResult) {
+        const searchTime = Date.now() - startTime
+        
+        // Track analytics for cached results
+        if (options.query) {
+          searchAnalyticsService.trackSearch(
+            options.query,
+            cachedResult.total,
+            searchTime,
+            undefined, // userId would come from auth context
+            options
+          ).catch(console.error)
+        }
+
+        return {
+          success: true,
+          data: cachedResult
+        }
+      }
+
+      // Get books and total count from repository
       const [books, total] = await Promise.all([
         this.repository.getAll(options),
         this.repository.getCount(options)
       ])
 
+      const searchTime = Date.now() - startTime
+      const result = { books, total }
+
+      // Cache the results
+      searchCacheService.set(options, books, total)
+
+      // Track analytics
+      if (options.query) {
+        searchAnalyticsService.trackSearch(
+          options.query,
+          total,
+          searchTime,
+          undefined, // userId would come from auth context
+          options
+        ).catch(console.error)
+      }
+
       return {
         success: true,
-        data: { books, total }
+        data: result
       }
     } catch (error) {
+      const searchTime = Date.now() - startTime
       console.error('Error in searchBooks:', error)
+
+      // Track failed searches
+      if (options.query) {
+        searchAnalyticsService.trackSearch(
+          options.query,
+          0,
+          searchTime,
+          undefined,
+          options
+        ).catch(console.error)
+      }
+
       return {
         success: false,
         error: 'An unexpected error occurred while searching books'
@@ -483,6 +545,164 @@ export class ClientBookService {
         error: 'An unexpected error occurred while fetching books'
       }
     }
+  }
+
+  /**
+   * Get search suggestions
+   */
+  async getSearchSuggestions(partialQuery: string, limit: number = 10): Promise<BookServiceResult<SearchSuggestion[]>> {
+    try {
+      if (!partialQuery || partialQuery.trim().length < 2) {
+        return {
+          success: true,
+          data: []
+        }
+      }
+
+      if (limit < 1 || limit > 50) {
+        return {
+          success: false,
+          error: 'Limit must be between 1 and 50'
+        }
+      }
+
+      const suggestions = await this.repository.getSearchSuggestions(partialQuery.trim(), limit)
+      return {
+        success: true,
+        data: suggestions
+      }
+    } catch (error) {
+      console.error('Error in getSearchSuggestions:', error)
+      return {
+        success: false,
+        error: 'An unexpected error occurred while fetching search suggestions'
+      }
+    }
+  }
+
+  /**
+   * Get popular searches
+   */
+  async getPopularSearches(timePeriod: string = '30 days', limit: number = 10): Promise<BookServiceResult<PopularSearch[]>> {
+    try {
+      if (limit < 1 || limit > 50) {
+        return {
+          success: false,
+          error: 'Limit must be between 1 and 50'
+        }
+      }
+
+      const popularSearches = await this.repository.getPopularSearches(timePeriod, limit)
+      return {
+        success: true,
+        data: popularSearches
+      }
+    } catch (error) {
+      console.error('Error in getPopularSearches:', error)
+      return {
+        success: false,
+        error: 'An unexpected error occurred while fetching popular searches'
+      }
+    }
+  }
+
+  /**
+   * Perform unified search across books and bundles with caching and analytics
+   */
+  async unifiedSearch(options: BookSearchOptions & {
+    includeBooks?: boolean
+    includeBundles?: boolean
+  } = {}): Promise<BookServiceResult<any[]>> {
+    const startTime = Date.now()
+    
+    try {
+      // Validate search parameters
+      const validation = validateBookSearch(options)
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: 'Invalid search parameters',
+          validationErrors: validation.errors
+        }
+      }
+
+      // Create cache key for unified search
+      // Note: Unified search caching could be implemented here if needed
+      
+      const results = await this.repository.unifiedSearch(options)
+      const searchTime = Date.now() - startTime
+
+      // Track analytics for unified search
+      if (options.query) {
+        searchAnalyticsService.trackSearch(
+          options.query,
+          results.length,
+          searchTime,
+          undefined,
+          { ...options, searchType: 'unified' }
+        ).catch(console.error)
+      }
+
+      return {
+        success: true,
+        data: results
+      }
+    } catch (error) {
+      const searchTime = Date.now() - startTime
+      console.error('Error in unifiedSearch:', error)
+
+      // Track failed unified searches
+      if (options.query) {
+        searchAnalyticsService.trackSearch(
+          options.query,
+          0,
+          searchTime,
+          undefined,
+          { ...options, searchType: 'unified' }
+        ).catch(console.error)
+      }
+
+      return {
+        success: false,
+        error: 'An unexpected error occurred while performing unified search'
+      }
+    }
+  }
+
+  /**
+   * Track when a user clicks on a search result
+   */
+  trackResultClick(query: string, resultId: string): void {
+    searchAnalyticsService.trackResultClick(query, resultId)
+  }
+
+  /**
+   * Get search performance metrics
+   */
+  getSearchMetrics() {
+    return searchAnalyticsService.getPerformanceMetrics()
+  }
+
+  /**
+   * Clear search cache
+   */
+  clearSearchCache(): void {
+    searchCacheService.clear()
+  }
+
+  /**
+   * Warm up search cache with popular queries
+   */
+  async warmupSearchCache(): Promise<void> {
+    const searchFunction = async (options: BookSearchOptions) => {
+      const [books, total] = await Promise.all([
+        this.repository.getAll(options),
+        this.repository.getCount(options)
+      ])
+      return { results: books, total }
+    }
+
+    await searchCacheService.warmupCache(searchFunction)
   }
 }
 

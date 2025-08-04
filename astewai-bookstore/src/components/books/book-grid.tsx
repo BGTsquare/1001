@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { BookCard } from './book-card'
 import { SearchBar } from './search-bar'
 import { BookFiltersComponent } from './book-filters'
+import { AdvancedSearchFilters } from './advanced-search-filters'
+import { SearchResults } from './search-results'
 import { Pagination, PaginationInfo } from './pagination'
 import { clientBookService } from '@/lib/services/client-book-service'
 import type { Book, BookFilters } from '@/types'
-import type { BookSearchOptions } from '@/lib/repositories/client-book-repository'
+import type { BookSearchOptions, SearchResult } from '@/lib/repositories/client-book-repository'
 import { cn } from '@/lib/utils'
 
 interface BookGridProps {
@@ -18,6 +20,9 @@ interface BookGridProps {
   showFilters?: boolean
   showSearch?: boolean
   showPagination?: boolean
+  showAdvancedFilters?: boolean
+  showSearchResults?: boolean
+  enableUnifiedSearch?: boolean
 }
 
 export function BookGrid({
@@ -27,9 +32,12 @@ export function BookGrid({
   className,
   showFilters = true,
   showSearch = true,
-  showPagination = true
+  showPagination = true,
+  showAdvancedFilters = false,
+  showSearchResults = false,
+  enableUnifiedSearch = false
 }: BookGridProps) {
-  const [books, setBooks] = useState<Book[]>(initialBooks)
+  const [books, setBooks] = useState<SearchResult[]>(initialBooks)
   const [total, setTotal] = useState(initialTotal)
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -79,15 +87,22 @@ export function BookGrid({
         isFree: filters.isFree,
         limit: itemsPerPage,
         offset: (currentPage - 1) * itemsPerPage,
-        sortBy: 'created_at',
-        sortOrder: 'desc'
+        sortBy: searchQuery ? 'relevance' : 'created_at',
+        sortOrder: searchQuery ? 'desc' : 'desc'
       }
 
-      const result = await clientBookService.searchBooks(searchOptions)
+      const result = enableUnifiedSearch && searchQuery
+        ? await clientBookService.unifiedSearch(searchOptions)
+        : await clientBookService.searchBooks(searchOptions)
 
       if (result.success && result.data) {
-        setBooks(result.data.books)
-        setTotal(result.data.total)
+        if (enableUnifiedSearch && searchQuery) {
+          setBooks(result.data)
+          setTotal(result.data.length)
+        } else {
+          setBooks(result.data.books)
+          setTotal(result.data.total)
+        }
       } else {
         setError(result.error || 'Failed to load books')
         setBooks([])
@@ -142,12 +157,22 @@ export function BookGrid({
           />
         )}
 
-        {showFilters && (
+        {showFilters && !showAdvancedFilters && (
           <BookFiltersComponent
             filters={filters}
             onFiltersChange={handleFiltersChange}
             categories={categories}
             tags={tags}
+          />
+        )}
+
+        {showAdvancedFilters && (
+          <AdvancedSearchFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            categories={categories}
+            tags={tags}
+            showCompact={true}
           />
         )}
       </div>
@@ -222,13 +247,24 @@ export function BookGrid({
         </div>
       )}
 
-      {/* Books Grid */}
+      {/* Books Grid or Search Results */}
       {!isLoading && !error && books.length > 0 && (
-        <div className="grid-responsive-books">
-          {books.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
+        <>
+          {showSearchResults && searchQuery ? (
+            <SearchResults
+              results={books}
+              searchQuery={searchQuery}
+              isLoading={isLoading}
+              showRanking={true}
+            />
+          ) : (
+            <div className="grid-responsive-books">
+              {books.map((book) => (
+                <BookCard key={book.id} book={book} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Pagination */}

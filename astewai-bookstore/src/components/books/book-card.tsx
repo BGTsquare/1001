@@ -10,9 +10,22 @@ import { formatPrice } from '@/utils/format'
 interface BookCardProps {
   book: Book
   className?: string
+  titleHighlight?: React.ReactNode
+  authorHighlight?: React.ReactNode
+  descriptionHighlight?: React.ReactNode
+  showRank?: boolean
+  rank?: number
 }
 
-export function BookCard({ book, className }: BookCardProps) {
+export function BookCard({ 
+  book, 
+  className,
+  titleHighlight,
+  authorHighlight,
+  descriptionHighlight,
+  showRank = false,
+  rank
+}: BookCardProps) {
   const {
     id,
     title,
@@ -52,18 +65,24 @@ export function BookCard({ book, className }: BookCardProps) {
             href={`/books/${id}`}
             className="hover:text-primary transition-colors touch-target"
           >
-            {title}
+            {titleHighlight || title}
           </Link>
         </CardTitle>
         
         <p className="text-muted-foreground text-mobile-sm font-medium">
-          by {author}
+          by {authorHighlight || author}
         </p>
         
         {description && (
           <p className="text-muted-foreground text-mobile-sm line-clamp-3">
-            {description}
+            {descriptionHighlight || description}
           </p>
+        )}
+        
+        {showRank && rank && (
+          <div className="text-xs text-muted-foreground">
+            Relevance: {Math.round(rank * 100)}%
+          </div>
         )}
         
         <div className="flex flex-wrap gap-1">

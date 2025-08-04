@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 
 const contactService = new ContactService();
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

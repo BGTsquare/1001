@@ -78,7 +78,7 @@ CREATE POLICY "Admins can manage all purchase requests" ON purchase_requests
 
 -- Function to ensure only one primary contact per type per admin
 CREATE OR REPLACE FUNCTION ensure_single_primary_contact()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   -- If setting this contact as primary, unset other primary contacts of the same type for this admin
   IF NEW.is_primary = true THEN
@@ -91,7 +91,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Create trigger to ensure single primary contact
 CREATE TRIGGER ensure_single_primary_contact_trigger

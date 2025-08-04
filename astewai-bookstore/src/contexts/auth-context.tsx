@@ -4,19 +4,32 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
+import { 
+  POSTGRES_ERROR_CODES, 
+  generateDisplayName, 
+  createProfileData 
+} from '@/lib/utils/profile-utils'
+
+interface AuthResult {
+  error?: string
+}
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error?: string }>
+  signIn: (email: string, password: string) => Promise<AuthResult>
+  signUp: (email: string, password: string, displayName: string) => Promise<AuthResult>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error?: string }>
+  resetPassword: (email: string) => Promise<AuthResult>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+/**
+ * Hook to access authentication context
+ * @throws {Error} When used outside of AuthProvider
+ */
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -68,7 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => subscription.unsubscribe()
   }, [supabase.auth])
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<void> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -77,6 +90,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .single()
 
       if (error) {
+        // If profile doesn't exist, create a default one
+        if (error.code === POSTGRES_ERROR_CODES.NOT_FOUND) {
+          console.log('Profile not found, creating default profile for user:', userId)
+          await createDefaultProfile(userId)
+          return
+        }
         console.error('Error fetching profile:', error)
         return
       }
@@ -87,7 +106,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const createDefaultProfile = async (userId: string): Promise<void> => {
+    try {
+      const { data: user } = await supabase.auth.getUser()
+      const displayName = generateDisplayName(user.user)
+      const profileData = createProfileData(userId, displayName)
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .insert(profileData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating default profile:', error)
+        return
+      }
+
+      setProfile(profile)
+    } catch (error) {
+      console.error('Error creating default profile:', error)
+    }
+  }
+
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -99,12 +141,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       return {}
-    } catch {
-      return { error: 'An unexpected error occurred' }
+    } catch (error) {
+      console.error('Unexpected error during sign in:', error)
+      return { error: 'An unexpected error occurred during sign in' }
     }
   }
 
-  const signUp = async (email: string, password: string, displayName: string) => {
+  const signUp = async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -123,31 +166,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Create profile if user was created successfully
       if (data.user) {
         try {
+          const profileData = createProfileData(data.user.id, displayName)
           const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
-              id: data.user.id,
-              display_name: displayName,
-              role: 'user',
-              reading_preferences: {
-                fontSize: 'medium',
-                theme: 'light',
-                fontFamily: 'sans-serif',
-              },
-            })
+            .insert(profileData)
 
           if (profileError) {
-            console.error('Error creating profile:', profileError)
+            console.error('Error creating profile during signup:', profileError)
             // Don't return error here as auth was successful
           }
         } catch (profileError) {
-          console.error('Error creating profile:', profileError)
+          console.error('Error creating profile during signup:', profileError)
         }
       }
 
       return {}
-    } catch {
-      return { error: 'An unexpected error occurred' }
+    } catch (error) {
+      console.error('Unexpected error during sign up:', error)
+      return { error: 'An unexpected error occurred during sign up' }
     }
   }
 
@@ -155,7 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await supabase.auth.signOut()
   }
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<AuthResult> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
@@ -166,8 +202,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       return {}
-    } catch {
-      return { error: 'An unexpected error occurred' }
+    } catch (error) {
+      console.error('Unexpected error during password reset:', error)
+      return { error: 'An unexpected error occurred during password reset' }
     }
   }
 
