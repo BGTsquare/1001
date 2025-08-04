@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateFile, generateUniqueFileName } from '@/lib/storage/file-validation'
+import { optimizeImage, createThumbnail } from '@/lib/storage/image-processing'
+import { FileType } from '@/lib/storage/types'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +29,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const type = formData.get('type') as string
+    const optimize = formData.get('optimize') === 'true'
+    const generateThumb = formData.get('generateThumbnail') === 'true'
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -35,48 +40,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
 
-    // Validate file type
-    if (type === 'cover') {
-      if (!file.type.startsWith('image/')) {
-        return NextResponse.json({ error: 'Cover must be an image file' }, { status: 400 })
-      }
-      // Check file size (max 5MB for images)
-      if (file.size > 5 * 1024 * 1024) {
-        return NextResponse.json({ error: 'Cover image must be less than 5MB' }, { status: 400 })
-      }
-    } else if (type === 'content') {
-      const allowedTypes = [
-        'application/pdf',
-        'application/epub+zip',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
-      if (!allowedTypes.includes(file.type)) {
-        return NextResponse.json({ 
-          error: 'Content file must be PDF, EPUB, TXT, or DOCX' 
-        }, { status: 400 })
-      }
-      // Check file size (max 50MB for content)
-      if (file.size > 50 * 1024 * 1024) {
-        return NextResponse.json({ error: 'Content file must be less than 50MB' }, { status: 400 })
+    // Map upload type to FileType
+    const fileType: FileType = type === 'cover' ? 'image' : 'book'
+    
+    // Validate file using enhanced validation
+    const validation = validateFile(file, fileType)
+    if (!validation.isValid) {
+      return NextResponse.json({ 
+        error: `File validation failed: ${validation.errors.join(', ')}` 
+      }, { status: 400 })
+    }
+
+    let processedFile = file
+    let thumbnailFile: File | null = null
+
+    // Optimize image if requested and it's an image
+    if (optimize && type === 'cover' && file.type.startsWith('image/')) {
+      try {
+        processedFile = await optimizeImage(file, {
+          maxWidth: 1200,
+          maxHeight: 1200,
+          quality: 0.8,
+          format: 'webp'
+        })
+      } catch (error) {
+        console.warn('Image optimization failed, using original file:', error)
       }
     }
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
-    const fileExtension = file.name.split('.').pop()
-    const fileName = `${type}s/${timestamp}-${randomString}.${fileExtension}`
+    // Generate thumbnail if requested and it's an image
+    if (generateThumb && type === 'cover' && file.type.startsWith('image/')) {
+      try {
+        thumbnailFile = await createThumbnail(file, 200)
+      } catch (error) {
+        console.warn('Thumbnail generation failed:', error)
+      }
+    }
 
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer()
+    // Generate unique filenames
+    const fileName = generateUniqueFileName(processedFile.name, `${type}s`)
+    const thumbnailFileName = thumbnailFile 
+      ? generateUniqueFileName(`thumb_${thumbnailFile.name}`, `${type}s/thumbnails`)
+      : undefined
+
+    // Upload main file
+    const arrayBuffer = await processedFile.arrayBuffer()
     const buffer = new Uint8Array(arrayBuffer)
 
-    // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('books')
       .upload(fileName, buffer, {
-        contentType: file.type,
+        contentType: processedFile.type,
         upsert: false
       })
 
@@ -85,16 +99,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
     }
 
-    // Get public URL
+    // Get public URL for main file
     const { data: { publicUrl } } = supabase.storage
       .from('books')
       .getPublicUrl(fileName)
 
+    // Upload thumbnail if available
+    let thumbnailUrl: string | undefined
+    if (thumbnailFile && thumbnailFileName) {
+      try {
+        const thumbArrayBuffer = await thumbnailFile.arrayBuffer()
+        const thumbBuffer = new Uint8Array(thumbArrayBuffer)
+
+        const { data: thumbData, error: thumbError } = await supabase.storage
+          .from('books')
+          .upload(thumbnailFileName, thumbBuffer, {
+            contentType: thumbnailFile.type,
+            upsert: false
+          })
+
+        if (!thumbError) {
+          const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
+            .from('books')
+            .getPublicUrl(thumbnailFileName)
+          thumbnailUrl = thumbPublicUrl
+        }
+      } catch (error) {
+        console.warn('Thumbnail upload failed:', error)
+      }
+    }
+
+    // Log upload activity
+    console.log(`File uploaded by admin ${user.id}: ${fileName} (${processedFile.size} bytes)`)
+
     return NextResponse.json({ 
       url: publicUrl,
       fileName: data.path,
-      size: file.size,
-      type: file.type
+      size: processedFile.size,
+      type: processedFile.type,
+      thumbnailUrl,
+      optimized: optimize && processedFile !== file,
+      originalSize: file.size
     })
 
   } catch (error) {

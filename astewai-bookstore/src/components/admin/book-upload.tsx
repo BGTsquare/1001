@@ -166,6 +166,8 @@ export function BookUpload({
       const formData = new FormData()
       formData.append('file', fileState.file)
       formData.append('type', type)
+      formData.append('optimize', 'true') // Enable optimization
+      formData.append('generateThumbnail', type === 'cover' ? 'true' : 'false')
 
       const response = await fetch('/api/admin/books/upload', {
         method: 'POST',
@@ -176,21 +178,26 @@ export function BookUpload({
         throw new Error('Upload failed')
       }
 
-      const { url } = await response.json()
+      const result = await response.json()
       
       setState(prev => ({ 
         ...prev, 
         uploading: false, 
         progress: 100, 
-        url,
+        url: result.url,
         error: undefined
       }))
 
       // Update form data with the uploaded file URL
       if (type === 'cover') {
-        setFormData(prev => ({ ...prev, cover_image_url: url }))
+        setFormData(prev => ({ ...prev, cover_image_url: result.url }))
       } else {
-        setFormData(prev => ({ ...prev, content_url: url }))
+        setFormData(prev => ({ ...prev, content_url: result.url }))
+      }
+
+      // Show optimization info if available
+      if (result.optimized) {
+        console.log(`File optimized: ${result.originalSize} -> ${result.size} bytes`)
       }
 
     } catch (error) {

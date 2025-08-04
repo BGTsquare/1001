@@ -21,6 +21,7 @@ import { BundleManager } from './bundle-manager'
 import { AdminContactManager } from '../contact/admin-contact-manager'
 import { PurchaseRequestManager } from '../contact/purchase-request-manager'
 import { ContactPurchaseManager } from './contact-purchase-manager'
+import { MediaManager } from './media-manager'
 import { UserManager } from './user-manager'
 
 interface DashboardStats {
@@ -267,6 +268,13 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
           </div>
         )}
 
+        {/* Media Management Section */}
+        {selectedSection === 'media' && (
+          <div>
+            <MediaManager />
+          </div>
+        )}
+
         {/* User Management Section */}
         {selectedSection === 'users' && (
           <div>
@@ -282,7 +290,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
         )}
 
         {/* Placeholder content for other sections */}
-        {!['overview', 'books', 'approval', 'bundles', 'contact', 'purchases', 'users'].includes(selectedSection) && (
+        {!['overview', 'books', 'approval', 'bundles', 'contact', 'media', 'purchases', 'users'].includes(selectedSection) && (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2 capitalize">{selectedSection}</h2>

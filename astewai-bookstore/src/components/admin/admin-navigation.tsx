@@ -13,7 +13,8 @@ import {
   Settings,
   MessageSquare,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  FolderOpen
 } from 'lucide-react'
 
 interface AdminNavigationProps {
@@ -76,6 +77,12 @@ export function AdminNavigation({
       label: 'Contact',
       icon: MessageSquare,
       description: 'Contact settings'
+    },
+    {
+      id: 'media',
+      label: 'Media',
+      icon: FolderOpen,
+      description: 'File management'
     },
     {
       id: 'analytics',
