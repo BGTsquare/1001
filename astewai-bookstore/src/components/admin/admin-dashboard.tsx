@@ -23,6 +23,7 @@ import { PurchaseRequestManager } from '../contact/purchase-request-manager'
 import { ContactPurchaseManager } from './contact-purchase-manager'
 import { MediaManager } from './media-manager'
 import { UserManager } from './user-manager'
+import { AnalyticsDashboard } from './analytics-dashboard'
 
 interface DashboardStats {
   totalBooks: number
@@ -289,8 +290,15 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
           </div>
         )}
 
+        {/* Analytics Dashboard Section */}
+        {selectedSection === 'analytics' && (
+          <div>
+            <AnalyticsDashboard />
+          </div>
+        )}
+
         {/* Placeholder content for other sections */}
-        {!['overview', 'books', 'approval', 'bundles', 'contact', 'media', 'purchases', 'users'].includes(selectedSection) && (
+        {!['overview', 'books', 'approval', 'bundles', 'contact', 'media', 'purchases', 'users', 'analytics'].includes(selectedSection) && (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2 capitalize">{selectedSection}</h2>

@@ -14,35 +14,47 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-top">
+    <header 
+      className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-top"
+      role="banner"
+    >
       <div className="container-mobile flex h-14 sm:h-16 items-center justify-between">
         <div className="flex items-center space-x-4 sm:space-x-8">
-          <Link href={ROUTES.HOME} className="flex items-center space-x-2 touch-target">
+          <Link 
+            href={ROUTES.HOME} 
+            className="flex items-center space-x-2 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+            aria-label={`${APP_NAME} - Go to homepage`}
+          >
             <span className="text-mobile-lg sm:text-xl font-bold truncate max-w-[150px] sm:max-w-none">{APP_NAME}</span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav 
+            className="hidden md:flex items-center space-x-6" 
+            role="navigation" 
+            aria-label="Main navigation"
+            id="navigation"
+          >
             <Link
               href={ROUTES.BOOKS}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target"
+              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
             >
               Books
             </Link>
             <Link
               href={ROUTES.BUNDLES}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target"
+              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
             >
               Bundles
             </Link>
             <Link
               href={ROUTES.BLOG}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target"
+              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
             >
               Blog
             </Link>
             <Link
               href={ROUTES.CONTACT}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target"
+              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
             >
               Contact
             </Link>
@@ -51,11 +63,16 @@ export function Header() {
 
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4" role="navigation" aria-label="User navigation">
             {user ? (
               <>
                 <Link href={ROUTES.LIBRARY}>
-                  <Button variant="ghost" size="sm" className="touch-target">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label="Go to my library"
+                  >
                     My Library
                   </Button>
                 </Link>
@@ -63,7 +80,12 @@ export function Header() {
                 {/* Admin Dashboard Link - Only show for admin users */}
                 {profile?.role === 'admin' && (
                   <Link href={ROUTES.ADMIN.DASHBOARD}>
-                    <Button variant="ghost" size="sm" className="touch-target">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      aria-label="Go to admin dashboard"
+                    >
                       Admin
                     </Button>
                   </Link>
@@ -72,8 +94,16 @@ export function Header() {
                 {/* Profile dropdown or link */}
                 <div className="flex items-center space-x-2">
                   <Link href={ROUTES.PROFILE}>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-2 touch-target">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex items-center space-x-2 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      aria-label={`Go to profile for ${profile?.display_name || 'user'}`}
+                    >
+                      <div 
+                        className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium"
+                        aria-hidden="true"
+                      >
                         {profile?.display_name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                       <span className="hidden lg:inline">
@@ -86,7 +116,8 @@ export function Header() {
                     variant="outline"
                     size="sm"
                     onClick={handleSignOut}
-                    className="touch-target"
+                    className="touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label="Sign out of your account"
                   >
                     Sign Out
                   </Button>
@@ -95,12 +126,23 @@ export function Header() {
             ) : (
               <>
                 <Link href={ROUTES.AUTH.LOGIN}>
-                  <Button variant="outline" size="sm" className="touch-target">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label="Sign in to your account"
+                  >
                     Sign In
                   </Button>
                 </Link>
                 <Link href={ROUTES.AUTH.REGISTER}>
-                  <Button size="sm" className="touch-target">Sign Up</Button>
+                  <Button 
+                    size="sm" 
+                    className="touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label="Create a new account"
+                  >
+                    Sign Up
+                  </Button>
                 </Link>
               </>
             )}

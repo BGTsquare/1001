@@ -141,8 +141,8 @@ export interface PushSubscriptionData {
   createdAt: string
   updatedAt: string
 }
-// Ut
-ility types for better type inference
+
+// Utility types for better type inference
 export type NotificationByType<T extends NotificationType> = Extract<NotificationData, { type: T }>
 
 // Type guards for runtime type checking

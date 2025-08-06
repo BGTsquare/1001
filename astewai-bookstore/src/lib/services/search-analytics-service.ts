@@ -23,13 +23,48 @@ interface PerformanceMetrics {
   zeroResultQueries: Array<{ query: string; count: number }>
 }
 
+// Strategy pattern for different storage backends
+interface MetricsStorage {
+  store(metric: SearchMetrics): Promise<void>;
+  retrieve(limit?: number): Promise<SearchMetrics[]>;
+  clear(): Promise<void>;
+}
+
+class InMemoryStorage implements MetricsStorage {
+  private metrics: SearchMetrics[] = [];
+  private readonly maxSize: number;
+
+  constructor(maxSize = 1000) {
+    this.maxSize = maxSize;
+  }
+
+  async store(metric: SearchMetrics): Promise<void> {
+    this.metrics.push(metric);
+    if (this.metrics.length > this.maxSize) {
+      this.metrics.shift();
+    }
+  }
+
+  async retrieve(limit?: number): Promise<SearchMetrics[]> {
+    return limit ? this.metrics.slice(-limit) : [...this.metrics];
+  }
+
+  async clear(): Promise<void> {
+    this.metrics = [];
+  }
+}
+
 export class SearchAnalyticsService {
-  private metrics: SearchMetrics[] = []
-  private readonly maxMetricsSize = 1000
-  private performanceThreshold = 1000 // 1 second
+  private storage: MetricsStorage;
+  private readonly performanceThreshold = 1000; // 1 second
+  private readonly debounceMap = new Map<string, NodeJS.Timeout>();
+
+  constructor(storage?: MetricsStorage) {
+    this.storage = storage || new InMemoryStorage();
+  }
 
   /**
-   * Track a search query with performance metrics
+   * Track a search query with performance metrics (debounced)
    */
   async trackSearch(
     query: string,
@@ -38,39 +73,61 @@ export class SearchAnalyticsService {
     userId?: string,
     filters?: Record<string, any>
   ): Promise<void> {
-    const metric: SearchMetrics = {
-      query: query.trim().toLowerCase(),
-      resultCount,
-      searchTime,
-      timestamp: Date.now(),
-      userId,
-      filters,
-      clickedResults: []
+    const normalizedQuery = query.trim().toLowerCase();
+    const debounceKey = `${normalizedQuery}-${userId || 'anonymous'}`;
+
+    // Clear existing timeout for this query
+    if (this.debounceMap.has(debounceKey)) {
+      clearTimeout(this.debounceMap.get(debounceKey)!);
     }
 
-    // Add to local metrics
-    this.metrics.push(metric)
+    // Debounce rapid searches
+    const timeout = setTimeout(async () => {
+      try {
+        const metric: SearchMetrics = {
+          query: normalizedQuery,
+          resultCount,
+          searchTime,
+          timestamp: Date.now(),
+          userId,
+          filters,
+          clickedResults: []
+        };
 
-    // Keep metrics array size manageable
-    if (this.metrics.length > this.maxMetricsSize) {
-      this.metrics.shift()
-    }
+        // Store metric
+        await this.storage.store(metric);
 
-    // Track in database for persistent analytics
+        // Track in database for persistent analytics
+        await this.trackInDatabase(normalizedQuery, resultCount);
+
+        // Log performance issues
+        this.logPerformanceIssues(normalizedQuery, searchTime, resultCount);
+
+      } catch (error) {
+        console.error('Failed to track search:', error);
+      } finally {
+        this.debounceMap.delete(debounceKey);
+      }
+    }, 300); // 300ms debounce
+
+    this.debounceMap.set(debounceKey, timeout);
+  }
+
+  private async trackInDatabase(query: string, resultCount: number): Promise<void> {
     try {
-      await clientBookRepository.trackSearchQuery(query, resultCount)
+      await clientBookRepository.trackSearchQuery(query, resultCount);
     } catch (error) {
-      console.error('Failed to track search in database:', error)
+      console.error('Failed to track search in database:', error);
     }
+  }
 
-    // Log slow queries for optimization
+  private logPerformanceIssues(query: string, searchTime: number, resultCount: number): void {
     if (searchTime > this.performanceThreshold) {
-      console.warn(`[SearchAnalytics] Slow query detected: "${query}" took ${searchTime}ms`)
+      console.warn(`[SearchAnalytics] Slow query detected: "${query}" took ${searchTime}ms`);
     }
 
-    // Log zero result queries for content gap analysis
     if (resultCount === 0) {
-      console.info(`[SearchAnalytics] Zero results for: "${query}"`)
+      console.info(`[SearchAnalytics] Zero results for: "${query}"`);
     }
   }
 

@@ -4,8 +4,10 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { PWAInstallPrompt } from '@/components/layout/pwa-install-prompt';
+import { SkipNavigation } from '@/components/layout/skip-navigation';
 import { AuthProvider } from '@/contexts/auth-context';
-import { QueryProvider } from '@/components/providers';
+import { QueryProvider, PurchaseRequestProvider } from '@/components/providers';
+import { AnalyticsProvider } from '@/components/providers/analytics-provider';
 import { APP_NAME, APP_DESCRIPTION } from '@/utils/constants';
 import { Toaster } from 'sonner';
 
@@ -23,9 +25,41 @@ const inter = Inter({
 // });
 
 export const metadata: Metadata = {
-  title: APP_NAME,
+  title: {
+    default: APP_NAME,
+    template: `%s | ${APP_NAME}`,
+  },
   description: APP_DESCRIPTION,
+  keywords: [
+    'digital bookstore',
+    'ebooks',
+    'online books',
+    'book bundles',
+    'reading',
+    'digital library',
+    'book collection',
+    'astewai',
+  ],
+  authors: [{ name: 'Astewai Digital Bookstore' }],
+  creator: 'Astewai Digital Bookstore',
+  publisher: 'Astewai Digital Bookstore',
   manifest: '/manifest.json',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+    yahoo: process.env.YAHOO_VERIFICATION,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -39,11 +73,18 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     title: APP_NAME,
     description: APP_DESCRIPTION,
+    locale: 'en_US',
+    url: process.env.NEXT_PUBLIC_SITE_URL,
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: APP_NAME,
     description: APP_DESCRIPTION,
+    site: '@astewai_books',
+    creator: '@astewai_books',
+  },
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_SITE_URL,
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -92,13 +133,27 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            <div className="layout-mobile">
-              <Header />
-              <main className="content-mobile">{children}</main>
-              <Footer />
-            </div>
-            <PWAInstallPrompt />
-            <Toaster />
+            <PurchaseRequestProvider>
+              <AnalyticsProvider>
+                <SkipNavigation />
+                <div className="layout-mobile">
+                  <Header />
+                  <main id="main-content" className="content-mobile" tabIndex={-1}>
+                    {children}
+                  </main>
+                  <Footer />
+                </div>
+                <PWAInstallPrompt />
+                <Toaster />
+                {/* Live region for screen reader announcements */}
+                <div
+                  id="live-region"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="sr-only"
+                />
+              </AnalyticsProvider>
+            </PurchaseRequestProvider>
           </AuthProvider>
         </QueryProvider>
         <script

@@ -1,11 +1,33 @@
+import { generateMetadata } from '@/lib/seo/metadata';
+import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
+import { StructuredData } from '@/components/seo/structured-data';
+
+export const metadata = generateMetadata({
+  title: 'Blog - Book Reviews, Reading Tips & Author Interviews',
+  description: 'Read our latest blog posts about books, reading tips, author interviews, and literary discussions. Stay updated with the world of books.',
+  url: '/blog',
+  type: 'website',
+  tags: ['blog', 'book reviews', 'reading tips', 'author interviews', 'literature', 'books'],
+});
+
 export default function BlogPage() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.com';
+
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData([
+    { name: 'Home', url: baseUrl },
+    { name: 'Blog', url: `${baseUrl}/blog` },
+  ]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Blog</h1>
-      <p className="text-muted-foreground">
-        Read the latest posts about books, reading, and literature. This page
-        will be implemented in upcoming tasks.
-      </p>
-    </div>
+    <>
+      <StructuredData data={breadcrumbStructuredData} id="blog-breadcrumb" />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Blog</h1>
+        <p className="text-muted-foreground">
+          Read the latest posts about books, reading, and literature. This page
+          will be implemented in upcoming tasks.
+        </p>
+      </div>
+    </>
   );
 }

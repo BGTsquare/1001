@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import React from 'react'
 
 /**
  * Next.js navigation mocks
@@ -27,7 +28,7 @@ export const mockNextImage = () => {
   vi.mock('next/image', () => ({
     default: ({ src, alt, ...props }: any) => {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={src} alt={alt} {...props} />
+      return React.createElement('img', { src, alt, ...props })
     },
   }))
 }
@@ -37,11 +38,8 @@ export const mockNextImage = () => {
  */
 export const mockNextLink = () => {
   vi.mock('next/link', () => ({
-    default: ({ children, href, ...props }: any) => (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    ),
+    default: ({ children, href, ...props }: any) => 
+      React.createElement('a', { href, ...props }, children),
   }))
 }
 

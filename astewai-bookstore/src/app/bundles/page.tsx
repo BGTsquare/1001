@@ -5,6 +5,17 @@ import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Package, Star, TrendingUp } from 'lucide-react';
+import { generateMetadata } from '@/lib/seo/metadata';
+import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
+import { StructuredData } from '@/components/seo/structured-data';
+
+export const metadata = generateMetadata({
+  title: 'Book Bundles - Save More on Digital Books',
+  description: 'Discover our curated book bundles and save money on digital books. Get multiple related books at discounted prices across all genres.',
+  url: '/bundles',
+  type: 'website',
+  tags: ['book bundles', 'digital books', 'ebook collections', 'discounted books', 'book deals'],
+});
 
 export default async function BundlesPage() {
   const queryClient = new QueryClient();
@@ -14,8 +25,16 @@ export default async function BundlesPage() {
     queryFn: getBundles,
   });
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.com';
+
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData([
+    { name: 'Home', url: baseUrl },
+    { name: 'Bundles', url: `${baseUrl}/bundles` },
+  ]);
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
+      <StructuredData data={breadcrumbStructuredData} id="bundles-breadcrumb" />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Book Bundles</h1>

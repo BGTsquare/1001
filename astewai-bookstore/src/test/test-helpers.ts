@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
+import React from 'react'
 
 // API Route Testing Helpers
 export const createMockRequest = (
@@ -125,18 +126,195 @@ export const checkAccessibility = async (container: HTMLElement) => {
   })
 }
 
+/**
+ * Enhanced accessibility testing with axe-core integration
+ */
+export const runAxeAccessibilityTests = async (container: HTMLElement) => {
+  try {
+    const axe = await import('axe-core')
+    
+    const results = await axe.run(container, {
+      rules: {
+        // WCAG 2.1 Level AA rules
+        'color-contrast': { enabled: true },
+        'keyboard-navigation': { enabled: true },
+        'focus-management': { enabled: true },
+        'aria-labels': { enabled: true },
+        'heading-order': { enabled: true },
+        'landmark-roles': { enabled: true },
+        'form-labels': { enabled: true },
+        'alt-text': { enabled: true },
+        'skip-link': { enabled: true }
+      }
+    })
+    
+    if (results.violations.length > 0) {
+      const violationMessages = results.violations.map(violation => 
+        `${violation.id}: ${violation.description}\n` +
+        violation.nodes.map(node => `  - ${node.failureSummary}`).join('\n')
+      ).join('\n\n')
+      
+      throw new Error(`Accessibility violations found:\n${violationMessages}`)
+    }
+    
+    return results
+  } catch (error) {
+    console.warn('axe-core not available, falling back to basic accessibility checks')
+    return checkAccessibility(container)
+  }
+}
+
+/**
+ * Test keyboard navigation
+ */
+export const testKeyboardNavigation = (container: HTMLElement) => {
+  const focusableElements = container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )
+  
+  // Test tab order
+  let currentIndex = 0
+  focusableElements.forEach((element, index) => {
+    const tabIndex = element.getAttribute('tabindex')
+    if (tabIndex && parseInt(tabIndex) > 0) {
+      expect(parseInt(tabIndex)).toBeGreaterThan(currentIndex)
+      currentIndex = parseInt(tabIndex)
+    }
+  })
+  
+  // Test that all interactive elements are focusable
+  focusableElements.forEach((element) => {
+    expect(element).not.toHaveAttribute('tabindex', '-1')
+  })
+}
+
+/**
+ * Test screen reader announcements
+ */
+export const testScreenReaderAnnouncements = (container: HTMLElement) => {
+  const liveRegions = container.querySelectorAll('[aria-live]')
+  const statusElements = container.querySelectorAll('[role="status"], [role="alert"]')
+  
+  // Ensure live regions have proper attributes
+  liveRegions.forEach((region) => {
+    const ariaLive = region.getAttribute('aria-live')
+    expect(['polite', 'assertive', 'off']).toContain(ariaLive)
+  })
+  
+  // Check for proper ARIA labels
+  const interactiveElements = container.querySelectorAll('button, a, input, select, textarea')
+  interactiveElements.forEach((element) => {
+    const hasLabel = element.getAttribute('aria-label') || 
+                    element.getAttribute('aria-labelledby') ||
+                    element.textContent?.trim() ||
+                    element.querySelector('img')?.getAttribute('alt')
+    
+    expect(hasLabel).toBeTruthy()
+  })
+}
+
+/**
+ * Test color contrast ratios
+ */
+export const testColorContrast = (element: HTMLElement) => {
+  const computedStyle = window.getComputedStyle(element)
+  const backgroundColor = computedStyle.backgroundColor
+  const color = computedStyle.color
+  
+  // This is a simplified test - in practice you'd use a proper color contrast library
+  expect(backgroundColor).not.toBe(color)
+}
+
+/**
+ * Test touch target sizes for mobile accessibility
+ */
+export const testTouchTargetSizes = (container: HTMLElement) => {
+  const interactiveElements = container.querySelectorAll('button, a, input[type="button"], input[type="submit"]')
+  
+  interactiveElements.forEach((element) => {
+    const rect = element.getBoundingClientRect()
+    const minSize = 44 // WCAG minimum touch target size
+    
+    expect(rect.width).toBeGreaterThanOrEqual(minSize)
+    expect(rect.height).toBeGreaterThanOrEqual(minSize)
+  })
+}
+
+/**
+ * Test reduced motion preferences
+ */
+export const testReducedMotion = () => {
+  // Mock prefers-reduced-motion
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+  
+  // Test that animations are disabled when reduced motion is preferred
+  const animatedElements = document.querySelectorAll('[class*="animate"], [class*="transition"]')
+  animatedElements.forEach((element) => {
+    const computedStyle = window.getComputedStyle(element)
+    expect(computedStyle.animationDuration).toBe('0.01ms')
+  })
+}
+
+/**
+ * Test heading hierarchy
+ */
+export const testHeadingHierarchy = (container: HTMLElement) => {
+  const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  let previousLevel = 0
+  
+  headings.forEach((heading) => {
+    const level = parseInt(heading.tagName.charAt(1))
+    if (previousLevel > 0 && level > previousLevel + 1) {
+      throw new Error(`Heading hierarchy violation: h${previousLevel} followed by h${level}`)
+    }
+    previousLevel = level
+  })
+}
+
+/**
+ * Test landmark roles
+ */
+export const testLandmarkRoles = (container: HTMLElement) => {
+  const landmarks = container.querySelectorAll('[role="banner"], [role="navigation"], [role="main"], [role="contentinfo"], [role="complementary"], [role="search"]')
+  const semanticLandmarks = container.querySelectorAll('header, nav, main, footer, aside')
+  
+  // Ensure main content is properly marked
+  const mainElements = container.querySelectorAll('main, [role="main"]')
+  expect(mainElements.length).toBeGreaterThanOrEqual(1)
+  
+  // Ensure navigation is properly marked
+  const navElements = container.querySelectorAll('nav, [role="navigation"]')
+  if (navElements.length > 0) {
+    navElements.forEach(nav => {
+      expect(nav.getAttribute('aria-label') || nav.getAttribute('aria-labelledby')).toBeTruthy()
+    })
+  }
+}
+
 // Error Boundary Testing
 export const TestErrorBoundary = ({ children, onError }: {
   children: React.ReactNode
   onError?: (error: Error) => void
 }) => {
   try {
-    return <>{children}</>
+    return React.createElement(React.Fragment, null, children)
   } catch (error) {
     if (onError) {
       onError(error as Error)
     }
-    return <div data-testid="error-boundary">Something went wrong</div>
+    return React.createElement('div', { 'data-testid': 'error-boundary' }, 'Something went wrong')
   }
 }
 

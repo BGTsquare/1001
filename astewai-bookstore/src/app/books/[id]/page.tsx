@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation'
 import { BookDetail } from '@/components/books/book-detail'
 import { bookService } from '@/lib/services/book-service'
+import { generateBookMetadata } from '@/lib/seo/metadata'
+import { generateBookPageStructuredData } from '@/lib/seo/page-structured-data'
+import { MultipleStructuredData } from '@/components/seo/structured-data'
 
 interface BookPageProps {
   params: {
@@ -8,6 +11,10 @@ interface BookPageProps {
   }
 }
 
+/**
+ * Book detail page component
+ * Displays detailed information about a specific book including content preview and purchase options
+ */
 export default async function BookPage({ params }: BookPageProps) {
   const result = await bookService.getBookById(params.id)
   
@@ -15,13 +22,25 @@ export default async function BookPage({ params }: BookPageProps) {
     notFound()
   }
 
+  const book = result.data
+
+  // Generate structured data
+  const structuredDataArray = generateBookPageStructuredData(book);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <BookDetail book={result.data} />
-    </div>
+    <>
+      <MultipleStructuredData dataArray={structuredDataArray} />
+      <div className="container mx-auto px-4 py-8">
+        <BookDetail book={book} />
+      </div>
+    </>
   )
 }
 
+/**
+ * Generate metadata for book detail page
+ * Creates SEO-optimized title, description, and Open Graph tags
+ */
 export async function generateMetadata({ params }: BookPageProps) {
   const result = await bookService.getBookById(params.id)
   
@@ -31,22 +50,5 @@ export async function generateMetadata({ params }: BookPageProps) {
     }
   }
 
-  const book = result.data
-  
-  return {
-    title: `${book.title} by ${book.author} | Astewai`,
-    description: book.description || `Read ${book.title} by ${book.author} on Astewai Digital Bookstore`,
-    openGraph: {
-      title: book.title,
-      description: book.description || `Read ${book.title} by ${book.author}`,
-      images: book.cover_image_url ? [book.cover_image_url] : [],
-      type: 'book',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: book.title,
-      description: book.description || `Read ${book.title} by ${book.author}`,
-      images: book.cover_image_url ? [book.cover_image_url] : [],
-    },
-  }
+  return generateBookMetadata(result.data)
 }

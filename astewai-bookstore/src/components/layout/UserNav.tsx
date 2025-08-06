@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/lib/auth";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, ShoppingCart, Library } from "lucide-react";
 import Link from "next/link";
 
 export function UserNav({ user }: { user: any }) {
@@ -35,6 +35,18 @@ export function UserNav({ user }: { user: any }) {
           <Link href="/profile">
             <UserIcon className="w-4 h-4 mr-2" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/library">
+            <Library className="w-4 h-4 mr-2" />
+            My Library
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/purchase-requests">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Purchase Requests
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

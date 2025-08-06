@@ -9,7 +9,7 @@ describe('Test Setup Validation', () => {
   })
 
   it('can create mock data', () => {
-    const book = createMockBook()
+    const book = createTestBook()
     expect(book).toHaveProperty('id')
     expect(book).toHaveProperty('title')
     expect(book).toHaveProperty('author')

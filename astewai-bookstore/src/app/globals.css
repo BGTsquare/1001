@@ -119,6 +119,89 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  .sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+  
+  /* Skip link styles */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    font-weight: 600;
+    transition: top 0.3s;
+  }
+  
+  .skip-link:focus {
+    top: 6px;
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    * {
+      border-color: ButtonText !important;
+    }
+    
+    .bg-primary {
+      background-color: ButtonText !important;
+      color: ButtonFace !important;
+    }
+    
+    .text-muted-foreground {
+      color: ButtonText !important;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  
+  /* Focus visible improvements */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  
+  /* Ensure minimum color contrast */
+  .text-muted-foreground {
+    color: var(--muted-foreground);
+    /* Ensure at least 4.5:1 contrast ratio */
+  }
 }
 
 /* Enhanced responsive design utilities */

@@ -1,11 +1,13 @@
 import { ContactRepository } from '@/lib/repositories/contact-repository';
 import { validateContactValue, formatContactValue } from '@/lib/validation/contact-validation';
 import { createNotificationService } from './notification-service';
+import { createEmailNotificationService } from './email-notification-service';
 import type { AdminContactInfo, PurchaseRequest, ContactMethod, AdminContactForm, PurchaseRequestForm } from '@/types';
 
 export class ContactService {
   private contactRepository = new ContactRepository();
   private notificationService = createNotificationService();
+  private emailNotificationService = createEmailNotificationService();
 
   // Admin contact info methods
   async getAdminContactInfo(adminId: string): Promise<AdminContactInfo[]> {
@@ -108,12 +110,17 @@ export class ContactService {
 
     const createdRequest = await this.contactRepository.createPurchaseRequest(request);
     
-    // Send notification to admins about the new purchase request
+    // Send notifications about the new purchase request
     try {
+      // Send confirmation email to user
+      await this.emailNotificationService.sendPurchaseRequestNotification(createdRequest);
+      
+      // Send notification to admins
+      await this.emailNotificationService.sendAdminNotification(createdRequest);
       await this.notificationService.notifyAdminsOfNewPurchaseRequest(createdRequest);
     } catch (error) {
       // Log error but don't fail the request creation
-      console.error('Failed to send admin notification for purchase request:', error);
+      console.error('Failed to send notifications for purchase request:', error);
     }
 
     return createdRequest;
@@ -124,7 +131,22 @@ export class ContactService {
     status: PurchaseRequest['status'], 
     adminNotes?: string
   ): Promise<PurchaseRequest> {
-    return this.contactRepository.updatePurchaseRequestStatus(id, status, adminNotes);
+    // Get the current request to track status change
+    const currentRequest = await this.contactRepository.getPurchaseRequestById(id);
+    const previousStatus = currentRequest?.status || 'unknown';
+    
+    const updatedRequest = await this.contactRepository.updatePurchaseRequestStatus(id, status, adminNotes);
+    
+    // Send status update notification to user
+    if (previousStatus !== status) {
+      try {
+        await this.emailNotificationService.sendStatusUpdateNotification(updatedRequest, previousStatus);
+      } catch (error) {
+        console.error('Failed to send status update notification:', error);
+      }
+    }
+    
+    return updatedRequest;
   }
 
   async approvePurchaseRequest(id: string, adminNotes?: string): Promise<PurchaseRequest> {

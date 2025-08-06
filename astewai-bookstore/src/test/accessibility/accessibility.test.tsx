@@ -1,11 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@/test/utils'
-import { checkAccessibility } from '@/test/test-helpers'
+import { render, screen, fireEvent } from '@/test/utils'
+import { 
+  checkAccessibility, 
+  runAxeAccessibilityTests,
+  testKeyboardNavigation,
+  testScreenReaderAnnouncements,
+  testTouchTargetSizes,
+  testReducedMotion,
+  testHeadingHierarchy,
+  testLandmarkRoles
+} from '@/test/test-helpers'
 import { BookCard } from '@/components/books/book-card'
 import { LoginForm } from '@/components/auth/login-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createMockBook } from '@/test/utils'
+import { createTestBook } from '@/test/utils'
+import React from 'react'
 
 // Mock axe-core for automated accessibility testing
 const mockAxe = {
@@ -23,33 +33,31 @@ describe('Accessibility Tests', () => {
 
   describe('WCAG 2.1 Level AA Compliance', () => {
     it('passes automated accessibility checks for BookCard', async () => {
-      const book = createMockBook()
+      const book = createTestBook()
       const { container } = render(<BookCard book={book} />)
 
-      await checkAccessibility(container)
-
-      // Run axe-core automated tests
-      const results = await mockAxe.run(container)
-      expect(results.violations).toHaveLength(0)
+      await runAxeAccessibilityTests(container)
+      testHeadingHierarchy(container)
+      testKeyboardNavigation(container)
     })
 
     it('passes automated accessibility checks for LoginForm', async () => {
       const { container } = render(<LoginForm />)
 
-      await checkAccessibility(container)
-
-      const results = await mockAxe.run(container)
-      expect(results.violations).toHaveLength(0)
+      await runAxeAccessibilityTests(container)
+      testScreenReaderAnnouncements(container)
     })
 
     it('ensures proper heading hierarchy', () => {
-      render(
+      const { container } = render(
         <div>
           <h1>Main Title</h1>
           <h2>Section Title</h2>
           <h3>Subsection Title</h3>
         </div>
       )
+
+      testHeadingHierarchy(container)
 
       const h1 = screen.getByRole('heading', { level: 1 })
       const h2 = screen.getByRole('heading', { level: 2 })
@@ -58,6 +66,29 @@ describe('Accessibility Tests', () => {
       expect(h1).toBeInTheDocument()
       expect(h2).toBeInTheDocument()
       expect(h3).toBeInTheDocument()
+    })
+
+    it('ensures proper landmark roles', () => {
+      const { container } = render(
+        <div>
+          <header role="banner">
+            <h1>Site Title</h1>
+          </header>
+          <nav role="navigation" aria-label="Main navigation">
+            <ul>
+              <li><a href="/">Home</a></li>
+            </ul>
+          </nav>
+          <main role="main">
+            <h2>Main Content</h2>
+          </main>
+          <footer role="contentinfo">
+            <p>Footer content</p>
+          </footer>
+        </div>
+      )
+
+      testLandmarkRoles(container)
     })
   })
 
@@ -121,15 +152,17 @@ describe('Accessibility Tests', () => {
 
   describe('Screen Reader Support', () => {
     it('provides proper ARIA labels for complex components', () => {
-      const book = createMockBook({ title: 'Test Book', author: 'Test Author' })
-      render(<BookCard book={book} />)
+      const book = createTestBook({ title: 'Test Book', author: 'Test Author' })
+      const { container } = render(<BookCard book={book} />)
+
+      testScreenReaderAnnouncements(container)
 
       const bookCard = screen.getByRole('article')
       expect(bookCard).toHaveAttribute('aria-label', expect.stringContaining('Test Book'))
     })
 
     it('uses proper ARIA roles for custom components', () => {
-      render(
+      const { container } = render(
         <div>
           <div role="tablist">
             <button role="tab" aria-selected="true" aria-controls="panel1">
@@ -145,6 +178,8 @@ describe('Accessibility Tests', () => {
         </div>
       )
 
+      testScreenReaderAnnouncements(container)
+
       const tablist = screen.getByRole('tablist')
       const tabs = screen.getAllByRole('tab')
       const tabpanel = screen.getByRole('tabpanel')
@@ -155,7 +190,7 @@ describe('Accessibility Tests', () => {
     })
 
     it('provides descriptive alt text for images', () => {
-      const book = createMockBook({ 
+      const book = createTestBook({ 
         title: 'The Great Adventure',
         author: 'John Doe',
         cover_image_url: 'https://example.com/cover.jpg'
@@ -183,7 +218,9 @@ describe('Accessibility Tests', () => {
         )
       }
 
-      render(<DynamicContent />)
+      const { container } = render(<DynamicContent />)
+
+      testScreenReaderAnnouncements(container)
 
       const button = screen.getByRole('button', { name: 'Update Content' })
       const liveRegion = screen.getByText('', { selector: '[aria-live="polite"]' })
@@ -281,13 +318,15 @@ describe('Accessibility Tests', () => {
 
   describe('Mobile Accessibility', () => {
     it('provides adequate touch targets', () => {
-      render(
+      const { container } = render(
         <div>
           <Button size="sm">Small Button</Button>
           <Button size="default">Default Button</Button>
           <Button size="lg">Large Button</Button>
         </div>
       )
+
+      testTouchTargetSizes(container)
 
       const buttons = screen.getAllByRole('button')
       
@@ -305,9 +344,9 @@ describe('Accessibility Tests', () => {
       render(
         <div className="max-w-full overflow-x-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <BookCard book={createMockBook()} />
-            <BookCard book={createMockBook()} />
-            <BookCard book={createMockBook()} />
+            <BookCard book={createTestBook()} />
+            <BookCard book={createTestBook()} />
+            <BookCard book={createTestBook()} />
           </div>
         </div>
       )
@@ -319,14 +358,7 @@ describe('Accessibility Tests', () => {
 
   describe('Motion and Animation', () => {
     it('respects prefers-reduced-motion', () => {
-      // Mock prefers-reduced-motion media query
-      Object.defineProperty(window, 'matchMedia', {
-        value: vi.fn(() => ({
-          matches: true, // User prefers reduced motion
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-        })),
-      })
+      testReducedMotion()
 
       render(
         <div className="transition-transform motion-reduce:transition-none">
@@ -354,7 +386,9 @@ describe('Accessibility Tests', () => {
         )
       }
 
-      render(<AutoPlayComponent />)
+      const { container } = render(<AutoPlayComponent />)
+
+      testScreenReaderAnnouncements(container)
 
       const pauseButton = screen.getByRole('button', { name: 'Pause' })
       expect(pauseButton).toBeInTheDocument()

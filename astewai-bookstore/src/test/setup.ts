@@ -8,7 +8,7 @@ import {
   mockNextImage, 
   mockNextLink, 
   mockNextHeaders 
-} from './mocks/next'
+} from './mocks/next.tsx'
 import { 
   mockTanStackQuery, 
   mockReactHookForm, 

@@ -4,11 +4,30 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Phone, MapPin, Clock, MessageSquare, HelpCircle } from 'lucide-react';
-// import { APP_NAME } from '@/utils/constants';
+import { generateMetadata } from '@/lib/seo/metadata';
+import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
+import { StructuredData } from '@/components/seo/structured-data';
+
+export const metadata = generateMetadata({
+  title: 'Contact Us - Get Support & Help',
+  description: 'Contact Astewai Digital Bookstore for support, questions, or feedback. We\'re here to help with technical issues, billing, and general inquiries.',
+  url: '/contact',
+  type: 'website',
+  tags: ['contact', 'support', 'help', 'customer service', 'technical support'],
+});
 
 export default function ContactPage() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.com';
+
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData([
+    { name: 'Home', url: baseUrl },
+    { name: 'Contact', url: `${baseUrl}/contact` },
+  ]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <StructuredData data={breadcrumbStructuredData} id="contact-breadcrumb" />
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
         <p className="text-muted-foreground">
@@ -233,6 +252,7 @@ export default function ContactPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

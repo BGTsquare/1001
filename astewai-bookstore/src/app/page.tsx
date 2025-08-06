@@ -8,15 +8,47 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ROUTES, APP_NAME } from '@/utils/constants';
+import { ROUTES, APP_NAME, APP_DESCRIPTION } from '@/utils/constants';
 import { FeaturedBooks } from '@/components/home/featured-books';
 import { FeaturedBundles } from '@/components/home/featured-bundles';
 import { RecentBlogPosts } from '@/components/home/recent-blog-posts';
 import { BookOpen, Users, TrendingUp, Star } from 'lucide-react';
+import { generateWebSiteStructuredData, generateOrganizationStructuredData } from '@/lib/seo/structured-data';
+import { MultipleStructuredData } from '@/components/seo/structured-data';
+import { generateMetadata } from '@/lib/seo/metadata';
+
+export const metadata = generateMetadata({
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
+  url: '/',
+  type: 'website',
+  tags: ['digital bookstore', 'ebooks', 'online books', 'reading', 'book bundles'],
+});
 
 export default function Home() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.com';
+
+  // Generate structured data
+  const websiteStructuredData = generateWebSiteStructuredData(baseUrl, APP_NAME);
+  const organizationStructuredData = generateOrganizationStructuredData({
+    name: APP_NAME,
+    url: baseUrl,
+    description: APP_DESCRIPTION,
+    contactPoint: {
+      contactType: 'customer service',
+      email: 'support@astewai-bookstore.com',
+    },
+  });
+
   return (
-    <div className="container-mobile py-6 sm:py-8">
+    <>
+      <MultipleStructuredData
+        dataArray={[
+          { data: websiteStructuredData, id: 'website-structured-data' },
+          { data: organizationStructuredData, id: 'organization-structured-data' },
+        ]}
+      />
+      <div className="container-mobile py-6 sm:py-8">
       {/* Hero Section */}
       <section className="text-center py-8 sm:py-12 lg:py-16">
         <h1 className="heading-responsive-xl mb-4 sm:mb-6">
@@ -194,6 +226,7 @@ export default function Home() {
           <Button size="lg">Get Started Free</Button>
         </Link>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
