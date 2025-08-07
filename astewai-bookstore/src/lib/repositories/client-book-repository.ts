@@ -167,7 +167,7 @@ export class ClientBookRepository {
       console.warn('Advanced search failed, falling back to basic search:', error?.message || 'Unknown error')
       return this.getAllBasic(options)
     } catch (error) {
-      console.warn('Advanced search unavailable, using basic search:', error)
+      console.error('Error fetching books:', error)
       return this.getAllBasic(options)
     }
   }
@@ -311,7 +311,7 @@ export class ClientBookRepository {
 
       return count || 0
     } catch (error) {
-      console.error('Unexpected error counting books:', error)
+      console.error('Error counting books:', error)
       return 0
     }
   }

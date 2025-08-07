@@ -67,6 +67,13 @@ export function AdminNavigation({
       badge: pendingPurchases > 0 ? pendingPurchases : undefined
     },
     {
+      id: 'payments',
+      label: 'Payment Approvals',
+      icon: ShoppingCart,
+      description: 'Approve payments',
+      badge: pendingPurchases > 0 ? pendingPurchases : undefined
+    },
+    {
       id: 'blog',
       label: 'Blog',
       icon: FileText,

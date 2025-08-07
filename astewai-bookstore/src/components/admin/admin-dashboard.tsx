@@ -24,6 +24,7 @@ import { ContactPurchaseManager } from './contact-purchase-manager'
 import { MediaManager } from './media-manager'
 import { UserManager } from './user-manager'
 import { AnalyticsDashboard } from './analytics-dashboard'
+import { PaymentApprovalDashboard } from './payment-approval-dashboard'
 
 interface DashboardStats {
   totalBooks: number
@@ -117,6 +118,14 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
       description: 'Approve pending purchase requests',
       icon: ShoppingCart,
       action: () => setSelectedSection('purchases'),
+      variant: 'outline' as const,
+      badge: defaultStats.pendingPurchases > 0 ? defaultStats.pendingPurchases : undefined
+    },
+    {
+      title: 'Payment Approvals',
+      description: 'Bulk approve payment requests',
+      icon: ShoppingCart,
+      action: () => setSelectedSection('payments'),
       variant: 'outline' as const,
       badge: defaultStats.pendingPurchases > 0 ? defaultStats.pendingPurchases : undefined
     },
@@ -287,6 +296,13 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
         {selectedSection === 'purchases' && (
           <div>
             <PurchaseRequestManager />
+          </div>
+        )}
+
+        {/* Payment Approval Section */}
+        {selectedSection === 'payments' && (
+          <div>
+            <PaymentApprovalDashboard />
           </div>
         )}
 

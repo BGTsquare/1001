@@ -9,7 +9,7 @@ export function Footer() {
       id="footer"
     >
       <div className="container-mobile py-6 sm:py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 sm:gap-8">
           <div className="col-span-2 sm:col-span-1 space-mobile-normal">
             <h3 className="text-mobile-lg font-semibold">{APP_NAME}</h3>
             <p className="text-mobile-sm text-muted-foreground">
@@ -91,10 +91,40 @@ export function Footer() {
               </li>
               <li>
                 <Link
+                  href="/faq"
+                  className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
+                >
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/contact"
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Contact Us
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          <nav className="space-mobile-normal" aria-labelledby="legal-heading">
+            <h4 id="legal-heading" className="text-mobile-sm font-semibold">Legal</h4>
+            <ul className="space-mobile-tight text-mobile-sm" role="list">
+              <li>
+                <Link
+                  href="/about"
+                  className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
+                >
+                  Terms of Service
                 </Link>
               </li>
               <li>
