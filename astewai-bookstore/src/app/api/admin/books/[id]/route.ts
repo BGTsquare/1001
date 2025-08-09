@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { BookService } from '@/lib/services/book-service'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 interface RouteParams {
   params: {
@@ -10,7 +10,7 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -29,19 +29,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Get book using service
-    const bookService = new BookService()
-    const result = await bookService.getBookById(params.id)
+    // Get book using admin client
+    const { data: book, error: bookError } = await supabaseAdmin
+      .from('books')
+      .select('*')
+      .eq('id', params.id)
+      .single()
 
-    if (!result.success) {
-      const status = result.error === 'Book not found' ? 404 : 400
-      return NextResponse.json(
-        { error: result.error, validationErrors: result.validationErrors },
-        { status }
-      )
+    if (bookError) {
+      console.error('Error fetching book:', bookError)
+      if (bookError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Book not found' }, { status: 404 })
+      }
+      return NextResponse.json({ error: 'Failed to fetch book' }, { status: 500 })
     }
 
-    return NextResponse.json(result.data)
+    return NextResponse.json(book)
 
   } catch (error) {
     console.error('Error in GET /api/admin/books/[id]:', error)
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -75,20 +78,32 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Parse request body
     const updateData = await request.json()
+    console.log('Updating book:', params.id, 'with data:', Object.keys(updateData))
 
-    // Update book using service
-    const bookService = new BookService()
-    const result = await bookService.updateBook(params.id, updateData)
+    // Update book using admin client
+    const { data: updatedBook, error: updateError } = await supabaseAdmin
+      .from('books')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.id)
+      .select()
+      .single()
 
-    if (!result.success) {
-      const status = result.error === 'Book not found' ? 404 : 400
-      return NextResponse.json(
-        { error: result.error, validationErrors: result.validationErrors },
-        { status }
-      )
+    if (updateError) {
+      console.error('Error updating book:', updateError)
+      if (updateError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Book not found' }, { status: 404 })
+      }
+      return NextResponse.json({ 
+        error: 'Failed to update book',
+        details: updateError.message 
+      }, { status: 500 })
     }
 
-    return NextResponse.json(result.data)
+    console.log('✅ Book updated successfully:', updatedBook.id)
+    return NextResponse.json(updatedBook)
 
   } catch (error) {
     console.error('Error in PUT /api/admin/books/[id]:', error)
@@ -101,7 +116,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -120,18 +135,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Delete book using service
-    const bookService = new BookService()
-    const result = await bookService.deleteBook(params.id)
+    // Delete book using admin client
+    const { error: deleteError } = await supabaseAdmin
+      .from('books')
+      .delete()
+      .eq('id', params.id)
 
-    if (!result.success) {
-      const status = result.error === 'Book not found' ? 404 : 400
-      return NextResponse.json(
-        { error: result.error, validationErrors: result.validationErrors },
-        { status }
-      )
+    if (deleteError) {
+      console.error('Error deleting book:', deleteError)
+      return NextResponse.json({ 
+        error: 'Failed to delete book',
+        details: deleteError.message 
+      }, { status: 500 })
     }
 
+    console.log('✅ Book deleted successfully:', params.id)
     return NextResponse.json({ message: 'Book deleted successfully' })
 
   } catch (error) {
