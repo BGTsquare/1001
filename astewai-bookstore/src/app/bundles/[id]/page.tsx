@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { BundleDetail } from "@/components/bundles/BundleDetail";
+import { BundleDetail } from "@/components/bundles";
 import { bundleService } from "@/lib/services/bundle-service";
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query";
 import { generateBundleMetadata } from '@/lib/seo/metadata'

@@ -1,27 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { BookService } from '@/lib/services/book-service'
+import { withAdminAuth, type AuthenticatedRequest } from '@/lib/middleware/auth-middleware'
 
-export async function GET(request: NextRequest) {
+export const GET = withAdminAuth(async (request: AuthenticatedRequest) => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
@@ -66,29 +48,10 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAdminAuth(async (request: AuthenticatedRequest) => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     // Parse request body
     const bookData = await request.json()
 
@@ -112,4 +75,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

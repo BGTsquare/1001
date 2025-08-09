@@ -12,31 +12,71 @@ export interface AuthenticatedRequest extends NextRequest {
   }
 }
 
+export interface AuthMiddlewareOptions {
+  requireProfile?: boolean
+  allowedRoles?: string[]
+}
+
+/**
+ * Enhanced authentication middleware with better error handling and performance
+ */
 export async function withAuth(
-  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
+  handler: (request: AuthenticatedRequest) => Promise<NextResponse>,
+  options: AuthMiddlewareOptions = { requireProfile: true }
 ) {
   return async (request: NextRequest) => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
       
+      // Get user with better error handling
       const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
+      
+      if (authError) {
+        console.error('Auth error:', authError.message)
+        return NextResponse.json(
+          { error: 'Authentication failed', details: authError.message }, 
+          { status: 401 }
+        )
+      }
+      
+      if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role, display_name, avatar_url')
-        .eq('id', user.id)
-        .single()
+      let profile = null
+      
+      // Only fetch profile if required (performance optimization)
+      if (options.requireProfile) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, role, display_name, avatar_url')
+          .eq('id', user.id)
+          .single()
 
-      if (profileError || !profile) {
-        return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+        if (profileError) {
+          console.error('Profile fetch error:', profileError.message)
+          return NextResponse.json(
+            { error: 'Profile not found', details: profileError.message }, 
+            { status: 404 }
+          )
+        }
+
+        profile = profileData
+        
+        // Check role-based access if specified
+        if (options.allowedRoles && !options.allowedRoles.includes(profile.role)) {
+          return NextResponse.json(
+            { error: `Forbidden - Required roles: ${options.allowedRoles.join(', ')}` }, 
+            { status: 403 }
+          )
+        }
       }
 
-      const authenticatedRequest = request as AuthenticatedRequest
-      authenticatedRequest.user = user
-      authenticatedRequest.profile = profile
+      // Extend request object with auth data
+      const authenticatedRequest = Object.assign(request, {
+        user,
+        profile
+      }) as AuthenticatedRequest
 
       return handler(authenticatedRequest)
     } catch (error) {
@@ -49,13 +89,30 @@ export async function withAuth(
   }
 }
 
+/**
+ * Admin-only authentication middleware
+ */
 export async function withAdminAuth(
   handler: (request: AuthenticatedRequest) => Promise<NextResponse>
 ) {
-  return withAuth(async (request: AuthenticatedRequest) => {
-    if (request.profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
-    }
-    return handler(request)
-  })
+  return withAuth(handler, { requireProfile: true, allowedRoles: ['admin'] })
+}
+
+/**
+ * User authentication middleware (no profile required for better performance)
+ */
+export async function withUserAuth(
+  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
+) {
+  return withAuth(handler, { requireProfile: false })
+}
+
+/**
+ * Role-based authentication middleware
+ */
+export function withRoleAuth(
+  roles: string[],
+  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
+) {
+  return withAuth(handler, { requireProfile: true, allowedRoles: roles })
 }

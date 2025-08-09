@@ -1,5 +1,5 @@
 import { Html, Head, Body, Container, Section, Text, Button, Hr } from '@react-email/components';
-import { BaseLayout } from './base-layout';
+import { BaseEmailLayout } from './base-layout';
 import { PurchaseItem } from '@/lib/services/email-notifications';
 
 interface PurchaseRejectionEmailProps {
@@ -20,7 +20,7 @@ export function PurchaseRejectionEmail({
   rejectionReason,
 }: PurchaseRejectionEmailProps) {
   return (
-    <BaseLayout>
+    <BaseEmailLayout>
       <Container style={containerStyle}>
         <Section style={headerStyle}>
           <Text style={titleStyle}>Purchase Declined</Text>
@@ -78,7 +78,7 @@ export function PurchaseRejectionEmail({
           </Text>
         </Section>
       </Container>
-    </BaseLayout>
+    </BaseEmailLayout>
   );
 }
 

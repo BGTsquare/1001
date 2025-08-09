@@ -25,6 +25,9 @@ import { MediaManager } from './media-manager'
 import { UserManager } from './user-manager'
 import { AnalyticsDashboard } from './analytics-dashboard'
 import { PaymentApprovalDashboard } from './payment-approval-dashboard'
+import { AdminSetup } from './admin-setup'
+import { BlogManager } from './blog-manager'
+import { StorageManager } from './storage-manager'
 
 interface DashboardStats {
   totalBooks: number
@@ -313,8 +316,29 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
           </div>
         )}
 
+        {/* Setup Section */}
+        {selectedSection === 'setup' && (
+          <div>
+            <AdminSetup />
+          </div>
+        )}
+
+        {/* Blog Management Section */}
+        {selectedSection === 'blog' && (
+          <div>
+            <BlogManager />
+          </div>
+        )}
+
+        {/* Storage Management Section */}
+        {selectedSection === 'storage' && (
+          <div>
+            <StorageManager />
+          </div>
+        )}
+
         {/* Placeholder content for other sections */}
-        {!['overview', 'books', 'approval', 'bundles', 'contact', 'media', 'purchases', 'users', 'analytics'].includes(selectedSection) && (
+        {!['overview', 'books', 'approval', 'bundles', 'contact', 'media', 'purchases', 'users', 'analytics', 'setup', 'blog', 'storage'].includes(selectedSection) && (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2 capitalize">{selectedSection}</h2>

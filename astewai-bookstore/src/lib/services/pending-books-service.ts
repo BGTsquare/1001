@@ -23,13 +23,13 @@ export interface PendingBooksResult {
 }
 
 export class PendingBooksService {
-  private supabase = createClient()
-
   async getPendingBooks(): Promise<{ success: true; data: PendingBooksResult } | { success: false; error: string }> {
     try {
+      const supabase = await createClient()
+      
       // TODO: Replace with actual status field when implemented in database
       // For now, we'll simulate pending books by returning all books
-      const { data: books, error } = await this.supabase
+      const { data: books, error } = await supabase
         .from('books')
         .select('*')
         .order('created_at', { ascending: false })
@@ -37,6 +37,16 @@ export class PendingBooksService {
       if (error) {
         console.error('Error fetching pending books:', error)
         return { success: false, error: 'Failed to fetch pending books' }
+      }
+
+      if (!books) {
+        return {
+          success: true,
+          data: {
+            books: [],
+            total: 0
+          }
+        }
       }
 
       // TODO: Remove simulation when actual status field is implemented
@@ -48,11 +58,14 @@ export class PendingBooksService {
         reviewer_notes: Math.random() > 0.8 ? 'Looks good for publication' : null
       }))
 
+      // Filter to only show pending books
+      const pendingBooks = booksWithStatus.filter(book => book.status === 'pending')
+
       return {
         success: true,
         data: {
-          books: booksWithStatus,
-          total: booksWithStatus.length
+          books: pendingBooks,
+          total: pendingBooks.length
         }
       }
     } catch (error) {
@@ -63,8 +76,10 @@ export class PendingBooksService {
 
   async approveBook(bookId: string, reviewerNotes?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const supabase = await createClient()
+      
       // TODO: Implement when status field is added to database
-      // const { error } = await this.supabase
+      // const { error } = await supabase
       //   .from('books')
       //   .update({
       //     status: 'approved',
@@ -83,8 +98,10 @@ export class PendingBooksService {
 
   async rejectBook(bookId: string, reviewerNotes?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const supabase = await createClient()
+      
       // TODO: Implement when status field is added to database
-      // const { error } = await this.supabase
+      // const { error } = await supabase
       //   .from('books')
       //   .update({
       //     status: 'rejected',

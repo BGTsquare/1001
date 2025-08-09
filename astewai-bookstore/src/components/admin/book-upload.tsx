@@ -169,16 +169,31 @@ export function BookUpload({
       formData.append('optimize', 'true') // Enable optimization
       formData.append('generateThumbnail', type === 'cover' ? 'true' : 'false')
 
-      const response = await fetch('/api/admin/books/upload', {
+      const response = await fetch('/api/admin/books/upload-simple', {
         method: 'POST',
         body: formData
       })
 
+      console.log('Upload response status:', response.status)
+      console.log('Upload response headers:', response.headers)
+
       if (!response.ok) {
-        throw new Error('Upload failed')
+        const errorText = await response.text()
+        console.error('Upload failed with response:', errorText)
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`)
       }
 
-      const result = await response.json()
+      const responseText = await response.text()
+      console.log('Raw response:', responseText)
+      
+      let result
+      try {
+        result = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError)
+        console.error('Response text was:', responseText)
+        throw new Error('Invalid response from server')
+      }
       
       setState(prev => ({ 
         ...prev, 
@@ -191,8 +206,12 @@ export function BookUpload({
       // Update form data with the uploaded file URL
       if (type === 'cover') {
         setFormData(prev => ({ ...prev, cover_image_url: result.url }))
+        // Clear any existing error for cover image
+        setErrors(prev => ({ ...prev, cover_image_url: '' }))
       } else {
         setFormData(prev => ({ ...prev, content_url: result.url }))
+        // Clear any existing error for content file
+        setErrors(prev => ({ ...prev, content_url: '' }))
       }
 
       // Show optimization info if available
@@ -201,11 +220,33 @@ export function BookUpload({
       }
 
     } catch (error) {
+      console.error('Upload error:', error)
+      
+      let errorMessage = 'Upload failed. Please try again.'
+      
+      // Check for specific storage bucket error
+      if (error instanceof Error && error.message.includes('Storage bucket not configured')) {
+        errorMessage = 'Storage not configured. Setting up storage...'
+        
+        // Try to set up storage automatically
+        try {
+          const setupResponse = await fetch('/api/admin/storage/setup', { method: 'POST' })
+          if (setupResponse.ok) {
+            errorMessage = 'Storage configured. Please try uploading again.'
+          } else {
+            errorMessage = 'Storage setup failed. Please contact administrator.'
+          }
+        } catch (setupError) {
+          console.error('Storage setup error:', setupError)
+          errorMessage = 'Storage setup failed. Please contact administrator.'
+        }
+      }
+      
       setState(prev => ({ 
         ...prev, 
         uploading: false, 
         progress: 0,
-        error: 'Upload failed. Please try again.'
+        error: errorMessage
       }))
     }
   }
@@ -225,12 +266,22 @@ export function BookUpload({
       newErrors.price = 'Paid books must have a price greater than 0'
     }
 
-    if (!formData.cover_image_url) {
-      newErrors.cover_image_url = 'Cover image is required'
+    // Check if cover image is uploaded or if there's a file ready to upload
+    if (!formData.cover_image_url && !coverImage.url) {
+      if (!coverImage.file) {
+        newErrors.cover_image_url = 'Cover image is required'
+      } else if (!coverImage.uploading) {
+        newErrors.cover_image_url = 'Please upload the selected cover image'
+      }
     }
 
-    if (!formData.content_url) {
-      newErrors.content_url = 'Book content file is required'
+    // Check if content file is uploaded or if there's a file ready to upload
+    if (!formData.content_url && !contentFile.url) {
+      if (!contentFile.file) {
+        newErrors.content_url = 'Book content file is required'
+      } else if (!contentFile.uploading) {
+        newErrors.content_url = 'Please upload the selected content file'
+      }
     }
 
     setErrors(newErrors)
@@ -240,11 +291,26 @@ export function BookUpload({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!validateForm()) return
-
     setIsSubmitting(true)
 
     try {
+      // Auto-upload files if they're selected but not uploaded
+      if (coverImage.file && !coverImage.url && !coverImage.uploading) {
+        await uploadFile('cover')
+      }
+      
+      if (contentFile.file && !contentFile.url && !contentFile.uploading) {
+        await uploadFile('content')
+      }
+
+      // Wait a moment for state updates
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      if (!validateForm()) {
+        setIsSubmitting(false)
+        return
+      }
+
       const endpoint = mode === 'edit' && initialData?.id 
         ? `/api/admin/books/${initialData.id}`
         : '/api/admin/books'
@@ -505,6 +571,9 @@ export function BookUpload({
                           {coverImage.uploading && (
                             <Progress value={coverImage.progress} className="w-full" />
                           )}
+                          {coverImage.error && (
+                            <p className="text-sm text-destructive">{coverImage.error}</p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -589,6 +658,9 @@ export function BookUpload({
                           </Button>
                           {contentFile.uploading && (
                             <Progress value={contentFile.progress} className="w-full" />
+                          )}
+                          {contentFile.error && (
+                            <p className="text-sm text-destructive">{contentFile.error}</p>
                           )}
                         </div>
                       )}

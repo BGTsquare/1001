@@ -37,6 +37,11 @@ export function BundleGrid({
 
   // Load bundles when search or page changes
   const loadBundles = useCallback(async () => {
+    // Don't reload if we already have data and no search query
+    if (bundles.length > 0 && !searchQuery && currentPage === 1) {
+      return;
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -67,7 +72,7 @@ export function BundleGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [searchQuery, currentPage, itemsPerPage])
+  }, [searchQuery, currentPage, itemsPerPage, bundles.length])
 
   // Load bundles when dependencies change
   useEffect(() => {
@@ -84,6 +89,17 @@ export function BundleGrid({
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query)
   }, [])
+
+  // Debounce search to avoid excessive API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery !== '') {
+        loadBundles()
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, loadBundles])
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page)

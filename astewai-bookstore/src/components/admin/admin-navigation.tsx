@@ -14,7 +14,8 @@ import {
   MessageSquare,
   BarChart3,
   CheckCircle,
-  FolderOpen
+  FolderOpen,
+  Database
 } from 'lucide-react'
 
 interface AdminNavigationProps {
@@ -92,6 +93,12 @@ export function AdminNavigation({
       description: 'File management'
     },
     {
+      id: 'storage',
+      label: 'Storage',
+      icon: Database,
+      description: 'Storage configuration'
+    },
+    {
       id: 'analytics',
       label: 'Analytics',
       icon: BarChart3,
@@ -102,6 +109,12 @@ export function AdminNavigation({
       label: 'Settings',
       icon: Settings,
       description: 'System settings'
+    },
+    {
+      id: 'setup',
+      label: 'Setup',
+      icon: Settings,
+      description: 'Initial setup & configuration'
     }
   ]
 

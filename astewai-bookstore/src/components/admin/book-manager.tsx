@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +25,8 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { BookUpload } from './book-upload'
+import { getAdminBooks } from '@/lib/repositories/admin-book-repository'
+import { LoadingSkeletons } from '@/components/ui/loading-skeletons'
 import { cn } from '@/lib/utils'
 import type { Book } from '@/types'
 
@@ -47,8 +50,6 @@ interface BulkAction {
 }
 
 export function BookManager({ className }: BookManagerProps) {
-  const [books, setBooks] = useState<Book[]>([])
-  const [loading, setLoading] = useState(true)
   const [selectedBooks, setSelectedBooks] = useState<string[]>([])
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [editingBook, setEditingBook] = useState<Book | null>(null)
@@ -57,6 +58,19 @@ export function BookManager({ className }: BookManagerProps) {
     category: '',
     status: 'all',
     priceType: 'all'
+  })
+
+  const { data: books = [], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['admin-books', filters],
+    queryFn: () => getAdminBooks({
+      query: filters.search || undefined,
+      category: filters.category || undefined,
+      isFree: filters.priceType === 'all' ? undefined : filters.priceType === 'free',
+      limit: 50,
+      offset: 0,
+      sortBy: 'created_at',
+      sortOrder: 'desc'
+    }),
   })
 
   const categories = [
@@ -94,42 +108,13 @@ export function BookManager({ className }: BookManagerProps) {
     }
   ]
 
-  useEffect(() => {
-    fetchBooks()
-  }, [filters])
-
-  const fetchBooks = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      
-      if (filters.search) params.append('search', filters.search)
-      if (filters.category) params.append('category', filters.category)
-      if (filters.priceType !== 'all') {
-        params.append('is_free', filters.priceType === 'free' ? 'true' : 'false')
-      }
-
-      const response = await fetch(`/api/admin/books?${params.toString()}`)
-      if (!response.ok) throw new Error('Failed to fetch books')
-      
-      const data = await response.json()
-      setBooks(data.books || [])
-    } catch (error) {
-      console.error('Error fetching books:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleBookCreated = (book: Book) => {
-    setBooks(prev => [book, ...prev])
+    refetch() // Refetch books after creation
     setShowUploadDialog(false)
   }
 
   const handleBookUpdated = (updatedBook: Book) => {
-    setBooks(prev => prev.map(book => 
-      book.id === updatedBook.id ? updatedBook : book
-    ))
+    refetch() // Refetch books after update
     setEditingBook(null)
   }
 
@@ -145,7 +130,7 @@ export function BookManager({ className }: BookManagerProps) {
 
       if (!response.ok) throw new Error('Failed to delete book')
 
-      setBooks(prev => prev.filter(book => book.id !== bookId))
+      refetch() // Refetch books after deletion
       setSelectedBooks(prev => prev.filter(id => id !== bookId))
     } catch (error) {
       console.error('Error deleting book:', error)
@@ -181,7 +166,7 @@ export function BookManager({ className }: BookManagerProps) {
       if (!response.ok) throw new Error('Failed to publish books')
 
       // Refresh books list
-      fetchBooks()
+      refetch()
       setSelectedBooks([])
     } catch (error) {
       console.error('Error publishing books:', error)
@@ -202,7 +187,7 @@ export function BookManager({ className }: BookManagerProps) {
 
       if (!response.ok) throw new Error('Failed to unpublish books')
 
-      fetchBooks()
+      refetch()
       setSelectedBooks([])
     } catch (error) {
       console.error('Error unpublishing books:', error)
@@ -224,7 +209,7 @@ export function BookManager({ className }: BookManagerProps) {
 
       if (!response.ok) throw new Error('Failed to delete books')
 
-      fetchBooks()
+      refetch()
       setSelectedBooks([])
     } catch (error) {
       console.error('Error deleting books:', error)
@@ -267,6 +252,32 @@ export function BookManager({ className }: BookManagerProps) {
     }
     return true
   })
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <LoadingSkeletons.Text className="h-8 w-48" />
+          <LoadingSkeletons.Button />
+        </div>
+        <div className="grid gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <LoadingSkeletons.Card key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-semibold mb-2">Failed to load books</h3>
+        <p className="text-muted-foreground mb-4">Please try again later.</p>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-6', className)}>

@@ -369,7 +369,7 @@ export class BookRepository {
       // Lazy initialization for server client to avoid import issues
       if (!this.supabase) {
         const { createClient } = await import('@/lib/supabase/server')
-        this.supabase = createClient()
+        this.supabase = await createClient()
       }
       return this.supabase
     }

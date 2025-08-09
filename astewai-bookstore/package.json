@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:no-turbo": "next dev",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -30,7 +30,10 @@
     "profiles:debug": "node scripts/debug-profiles.js",
     "seo:validate": "node scripts/validate-seo.js",
     "email:demo": "node scripts/demo-email-system.js",
-    "email:test": "vitest --run src/**/*email*.test.{ts,tsx}"
+    "email:test": "vitest --run src/**/*email*.test.{ts,tsx}",
+    "dev:fix": "node scripts/fix-dev-server.js",
+    "dev:restart": "node scripts/restart-dev.js",
+    "storage:fix": "node scripts/fix-storage.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",
@@ -45,6 +48,7 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slider": "^1.3.5",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@react-email/components": "^0.4.0",
     "@react-email/render": "^1.1.4",

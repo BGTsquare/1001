@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/working-collapsible'
 import { cn } from '@/lib/utils'
 import type { BookFilters } from '@/types'
 
@@ -239,10 +239,8 @@ export function AdvancedSearchFilters({
               )}
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-4 pb-4">
-              <FilterContent />
-            </div>
+          <CollapsibleContent className="px-4 pb-4">
+            <FilterContent />
           </CollapsibleContent>
         </Collapsible>
       </Card>

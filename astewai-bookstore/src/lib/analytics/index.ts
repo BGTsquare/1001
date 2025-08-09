@@ -6,7 +6,8 @@
 import { analyticsConfig, type AnalyticsEvent } from './config';
 import { VercelAnalyticsProvider } from './providers/vercel-provider';
 import { PlausibleAnalyticsProvider } from './providers/plausible-provider';
-import { SentryAnalyticsProvider } from './providers/sentry-provider';
+// Temporarily disabled Sentry to fix import issues
+// import { SentryAnalyticsProvider } from './providers/sentry-provider';
 import { AnalyticsQueueManager } from './queue-manager';
 import type { AnalyticsEventData, ConversionData } from './providers/base-provider';
 
@@ -23,15 +24,15 @@ const LOG_EMOJIS = {
 // Re-export types for convenience
 export type { AnalyticsEventData, ConversionData };
 
-// Lazy provider initialization
-let providers: (VercelAnalyticsProvider | PlausibleAnalyticsProvider | SentryAnalyticsProvider)[] | null = null;
+// Lazy provider initialization (Sentry temporarily disabled)
+let providers: (VercelAnalyticsProvider | PlausibleAnalyticsProvider)[] | null = null;
 
 function getProviders() {
   if (!providers) {
     providers = [
       new VercelAnalyticsProvider(analyticsConfig.vercel),
       new PlausibleAnalyticsProvider(analyticsConfig.plausible),
-      new SentryAnalyticsProvider(analyticsConfig.sentry),
+      // Temporarily disabled: new SentryAnalyticsProvider(analyticsConfig.sentry),
     ].filter(provider => provider.isEnabled());
   }
   return providers;
@@ -44,7 +45,7 @@ function getProviders() {
  * @param logData - Data to include in development logs
  */
 async function executeProviderOperation<T>(
-  operation: (provider: VercelAnalyticsProvider | PlausibleAnalyticsProvider | SentryAnalyticsProvider) => Promise<T>,
+  operation: (provider: VercelAnalyticsProvider | PlausibleAnalyticsProvider) => Promise<T>,
   operationName: string,
   logData?: Record<string, unknown>
 ): Promise<void> {
@@ -61,16 +62,8 @@ async function executeProviderOperation<T>(
     } catch (error) {
       console.error(`${operationName} error in ${provider.constructor.name}:`, error);
       
-      // Report to Sentry if it's not the Sentry provider itself
-      if (!(provider instanceof SentryAnalyticsProvider) && analyticsConfig.sentry.enabled) {
-        const sentryProvider = activeProviders.find(p => p instanceof SentryAnalyticsProvider) as SentryAnalyticsProvider;
-        sentryProvider?.trackError(error as Error, {
-          component: 'analytics',
-          provider: provider.constructor.name,
-          operation: operationName,
-          data: logData,
-        });
-      }
+      // Sentry error reporting temporarily disabled
+      console.error(`Analytics provider error in ${provider.constructor.name}:`, error);
     }
   });
 
@@ -92,16 +85,8 @@ const queueManager = new AnalyticsQueueManager(async (events) => {
       } catch (error) {
         console.error(`Analytics error in ${provider.constructor.name}:`, error);
         
-        // Report to Sentry if it's not the Sentry provider itself
-        if (!(provider instanceof SentryAnalyticsProvider) && analyticsConfig.sentry.enabled) {
-          const sentryProvider = activeProviders.find(p => p instanceof SentryAnalyticsProvider) as SentryAnalyticsProvider;
-          sentryProvider?.trackError(error as Error, {
-            component: 'analytics',
-            provider: provider.constructor.name,
-            event,
-            data,
-          });
-        }
+        // Sentry error reporting temporarily disabled
+        console.error(`Analytics queue error in ${provider.constructor.name}:`, error);
         
         throw error; // Re-throw for queue retry logic
       }
@@ -209,12 +194,8 @@ export function trackPerformance(metric: string, value: number, unit = 'ms'): vo
  */
 export function trackError(error: Error, context?: Record<string, any>): void {
   try {
-    // Use Sentry provider directly for error tracking
-    const activeProviders = getProviders();
-    const sentryProvider = activeProviders.find(p => p instanceof SentryAnalyticsProvider) as SentryAnalyticsProvider;
-    if (sentryProvider) {
-      sentryProvider.trackError(error, context);
-    }
+    // Sentry provider temporarily disabled - just log errors
+    console.error('Error tracked:', error.message, context);
 
     // Track as analytics event
     trackEvent('error_occurred', {

@@ -46,13 +46,26 @@ export function BookApproval({ className }: BookApprovalProps) {
   const fetchPendingBooks = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/books/pending')
-      if (!response.ok) throw new Error('Failed to fetch pending books')
+      let response = await fetch('/api/admin/books/pending')
+      
+      // If main endpoint fails, try test endpoint
+      if (!response.ok) {
+        console.warn('Main endpoint failed, trying test endpoint')
+        response = await fetch('/api/admin/books/pending/test')
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
       
       const data = await response.json()
+      console.log('Fetched pending books:', data) // Debug log
       setBooks(data.books || [])
     } catch (error) {
       console.error('Error fetching pending books:', error)
+      setBooks([]) // Set empty array on error
+      // You might want to show a toast notification here
     } finally {
       setLoading(false)
     }
