@@ -1,10 +1,12 @@
 'use client'
 
+import { useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, BookOpen, TrendingDown } from 'lucide-react'
+import { Package, BookOpen } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { BundlePricing, DiscountBadge } from './bundle-pricing'
 import type { Bundle } from '@/types'
 import { formatPrice } from '@/utils/format'
 
@@ -13,31 +15,57 @@ interface BundleCardProps {
   className?: string
 }
 
+// Constants
+const MAX_DISPLAY_BOOKS = 4
+const BOOK_GRID_COLS = 2
+
 export function BundleCard({ bundle, className }: BundleCardProps) {
   const {
     id,
     title,
     description,
     price,
+    cover_image_url,
     books = []
   } = bundle
 
-  // Calculate total book price and savings
-  const totalBookPrice = books.reduce((sum, book) => sum + book.price, 0)
-  const savings = totalBookPrice - price
-  const discountPercentage = totalBookPrice > 0 ? Math.round((savings / totalBookPrice) * 100) : 0
-
-  // Get first few book covers for display
-  const displayBooks = books.slice(0, 4)
-  const remainingCount = Math.max(0, books.length - 4)
+  // Memoize expensive calculations
+  const { totalBookPrice, savings, discountPercentage, displayBooks, remainingCount } = useMemo(() => {
+    const totalPrice = books.reduce((sum, book) => sum + book.price, 0)
+    const bundleSavings = totalPrice - price
+    const discount = totalPrice > 0 ? Math.round((bundleSavings / totalPrice) * 100) : 0
+    const displayBooksSlice = books.slice(0, MAX_DISPLAY_BOOKS)
+    const remaining = Math.max(0, books.length - MAX_DISPLAY_BOOKS)
+    
+    return {
+      totalBookPrice: totalPrice,
+      savings: bundleSavings,
+      discountPercentage: discount,
+      displayBooks: displayBooksSlice,
+      remainingCount: remaining
+    }
+  }, [books, price])
 
   return (
     <Card className={className}>
       <CardHeader className="pb-3">
         {/* Bundle Cover Display */}
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
-          {displayBooks.length > 0 ? (
-            <div className="grid grid-cols-2 gap-1 h-full p-2">
+          {cover_image_url ? (
+            <Image
+              src={cover_image_url}
+              alt={`${title} bundle cover`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              priority={false}
+              onError={(e) => {
+                // Fallback to placeholder on error
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          ) : displayBooks.length > 0 ? (
+            <div className={`grid grid-cols-${BOOK_GRID_COLS} gap-1 h-full p-2`}>
               {displayBooks.map((book, index) => (
                 <div
                   key={book.id}
@@ -60,7 +88,7 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
               ))}
               
               {/* Show remaining count if there are more books */}
-              {remainingCount > 0 && displayBooks.length === 4 && (
+              {remainingCount > 0 && displayBooks.length === MAX_DISPLAY_BOOKS && (
                 <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                   +{remainingCount}
                 </div>
@@ -73,13 +101,7 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
           )}
         </div>
 
-        {/* Discount Badge */}
-        {discountPercentage > 0 && (
-          <div className="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-            <TrendingDown className="h-3 w-3" />
-            {discountPercentage}% OFF
-          </div>
-        )}
+        <DiscountBadge discountPercentage={discountPercentage} />
       </CardHeader>
       
       <CardContent className="space-y-3">
@@ -87,6 +109,7 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
           <Link 
             href={`/bundles/${id}`}
             className="hover:text-primary transition-colors"
+            aria-label={`View details for ${title} bundle`}
           >
             {title}
           </Link>
@@ -104,33 +127,22 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
           <span>{books.length} book{books.length !== 1 ? 's' : ''}</span>
         </div>
 
-        {/* Pricing Information */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold">{formatPrice(price)}</span>
-            {totalBookPrice > price && (
-              <span className="text-sm text-muted-foreground line-through">
-                {formatPrice(totalBookPrice)}
-              </span>
-            )}
-          </div>
-          
-          {savings > 0 && (
-            <p className="text-sm text-green-600 font-medium">
-              Save {formatPrice(savings)}
-            </p>
-          )}
-        </div>
+        <BundlePricing 
+          price={price}
+          totalBookPrice={totalBookPrice}
+          savings={savings}
+          discountPercentage={discountPercentage}
+        />
       </CardContent>
       
       <CardFooter className="flex items-center justify-between pt-3">
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/bundles/${id}`}>
+          <Link href={`/bundles/${id}`} aria-label={`View details for ${title}`}>
             View Details
           </Link>
         </Button>
         
-        <Button size="sm">
+        <Button size="sm" aria-label={`Buy ${title} bundle for ${formatPrice(price)}`}>
           Buy Bundle
         </Button>
       </CardFooter>

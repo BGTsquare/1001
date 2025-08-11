@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { data: book, error: bookError } = await supabaseAdmin
       .from('books')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (bookError) {
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Parse request body
     const updateData = await request.json()
-    console.log('Updating book:', params.id, 'with data:', Object.keys(updateData))
+    console.log('Updating book:', id, 'with data:', Object.keys(updateData))
 
     // Update book using admin client
     const { data: updatedBook, error: updateError } = await supabaseAdmin
@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...updateData,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { error: deleteError } = await supabaseAdmin
       .from('books')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (deleteError) {
       console.error('Error deleting book:', deleteError)
@@ -149,7 +149,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }, { status: 500 })
     }
 
-    console.log('✅ Book deleted successfully:', params.id)
+    console.log('✅ Book deleted successfully:', id)
     return NextResponse.json({ message: 'Book deleted successfully' })
 
   } catch (error) {

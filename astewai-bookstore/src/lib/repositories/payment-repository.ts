@@ -14,15 +14,53 @@ export interface UpdatePurchaseData {
   payment_provider_id?: string
 }
 
+// Generic result type for consistent error handling
+export interface RepositoryResult<T> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+export interface PaginatedResult<T> extends RepositoryResult<T[]> {
+  total?: number
+  page?: number
+  limit?: number
+}
+
 export class PaymentRepository {
-  private supabase = createClient()
+  private supabase: any
+  private isClient: boolean
+
+  constructor(isClient = false) {
+    this.isClient = isClient
+    if (isClient) {
+      const { createClient: createClientClient } = require('@/lib/supabase/client')
+      this.supabase = createClientClient()
+    } else {
+      // For server-side, we'll initialize lazily to avoid import issues
+      this.supabase = null
+    }
+  }
+
+  private async getSupabaseClient() {
+    if (this.isClient) {
+      return this.supabase
+    } else {
+      // Lazy initialization for server client to avoid import issues
+      if (!this.supabase) {
+        const { createClient } = await import('@/lib/supabase/server')
+        this.supabase = await createClient()
+      }
+      return this.supabase
+    }
+  }
 
   /**
    * Create a new purchase record
    */
-  async createPurchase(data: CreatePurchaseData): Promise<{ success: boolean; data?: Purchase; error?: string }> {
+  async createPurchase(data: CreatePurchaseData): Promise<RepositoryResult<Purchase>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const { data: purchase, error } = await supabase
         .from('purchases')
@@ -52,9 +90,9 @@ export class PaymentRepository {
   /**
    * Get purchase by ID
    */
-  async getPurchaseById(id: string): Promise<{ success: boolean; data?: Purchase; error?: string }> {
+  async getPurchaseById(id: string): Promise<RepositoryResult<Purchase>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const { data: purchase, error } = await supabase
         .from('purchases')
@@ -77,9 +115,9 @@ export class PaymentRepository {
   /**
    * Get purchases by user ID
    */
-  async getPurchasesByUserId(userId: string): Promise<{ success: boolean; data?: Purchase[]; error?: string }> {
+  async getPurchasesByUserId(userId: string): Promise<RepositoryResult<Purchase[]>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const { data: purchases, error } = await supabase
         .from('purchases')
@@ -97,13 +135,14 @@ export class PaymentRepository {
       console.error('Error in getPurchasesByUserId:', error)
       return { success: false, error: 'Failed to fetch user purchases' }
     }
-  }  /**
-  
- * Update purchase status and details
+  }
+
+  /**
+   * Update purchase status and details
    */
-  async updatePurchase(id: string, data: UpdatePurchaseData): Promise<{ success: boolean; data?: Purchase; error?: string }> {
+  async updatePurchase(id: string, data: UpdatePurchaseData): Promise<RepositoryResult<Purchase>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const updateData: any = {
         ...data,
@@ -132,9 +171,9 @@ export class PaymentRepository {
   /**
    * Check if user has existing purchase for item
    */
-  async hasExistingPurchase(userId: string, itemType: 'book' | 'bundle', itemId: string): Promise<{ success: boolean; data?: Purchase; error?: string }> {
+  async hasExistingPurchase(userId: string, itemType: 'book' | 'bundle', itemId: string): Promise<RepositoryResult<Purchase | null>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const { data: purchase, error } = await supabase
         .from('purchases')
@@ -150,18 +189,19 @@ export class PaymentRepository {
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase || undefined }
+      return { success: true, data: purchase || null }
     } catch (error) {
       console.error('Error in hasExistingPurchase:', error)
       return { success: false, error: 'Failed to check existing purchase' }
     }
-  }  /**
-   
-* Get purchase by payment provider ID
+  }
+
+  /**
+   * Get purchase by payment provider ID
    */
-  async getPurchaseByProviderId(providerId: string): Promise<{ success: boolean; data?: Purchase; error?: string }> {
+  async getPurchaseByProviderId(providerId: string): Promise<RepositoryResult<Purchase>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       
       const { data: purchase, error } = await supabase
         .from('purchases')
@@ -184,9 +224,9 @@ export class PaymentRepository {
   /**
    * Get all purchases with pagination (admin use)
    */
-  async getAllPurchases(page: number = 1, limit: number = 20): Promise<{ success: boolean; data?: Purchase[]; error?: string; total?: number }> {
+  async getAllPurchases(page: number = 1, limit: number = 20): Promise<PaginatedResult<Purchase>> {
     try {
-      const supabase = await this.supabase
+      const supabase = await this.getSupabaseClient()
       const offset = (page - 1) * limit
 
       // Get total count
@@ -211,12 +251,105 @@ export class PaymentRepository {
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchases || [], total: count || 0 }
+      return { 
+        success: true, 
+        data: purchases || [], 
+        total: count || 0,
+        page,
+        limit
+      }
     } catch (error) {
       console.error('Error in getAllPurchases:', error)
       return { success: false, error: 'Failed to fetch all purchases' }
     }
   }
+
+  /**
+   * Get purchases by status
+   */
+  async getPurchasesByStatus(status: 'pending' | 'approved' | 'rejected' | 'completed'): Promise<RepositoryResult<Purchase[]>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: purchases, error } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('status', status)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching purchases by status:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: purchases || [] }
+    } catch (error) {
+      console.error('Error in getPurchasesByStatus:', error)
+      return { success: false, error: 'Failed to fetch purchases by status' }
+    }
+  }
+
+  /**
+   * Get purchase count by status (for admin dashboard)
+   */
+  async getPurchaseCountByStatus(): Promise<RepositoryResult<Record<string, number>>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: purchases, error } = await supabase
+        .from('purchases')
+        .select('status')
+
+      if (error) {
+        console.error('Error fetching purchase counts:', error)
+        return { success: false, error: error.message }
+      }
+
+      const counts = purchases?.reduce((acc, purchase) => {
+        acc[purchase.status] = (acc[purchase.status] || 0) + 1
+        return acc
+      }, {} as Record<string, number>) || {}
+
+      return { success: true, data: counts }
+    } catch (error) {
+      console.error('Error in getPurchaseCountByStatus:', error)
+      return { success: false, error: 'Failed to fetch purchase counts' }
+    }
+  }
+
+  /**
+   * Check if purchase exists by ID
+   */
+  async exists(id: string): Promise<boolean> {
+    const result = await this.getPurchaseById(id)
+    return result.success && !!result.data
+  }
+
+  /**
+   * Delete a purchase (admin only - use with caution)
+   */
+  async deletePurchase(id: string): Promise<RepositoryResult<boolean>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { error } = await supabase
+        .from('purchases')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Error deleting purchase:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: true }
+    } catch (error) {
+      console.error('Error in deletePurchase:', error)
+      return { success: false, error: 'Failed to delete purchase' }
+    }
+  }
 }
 
+// Export singleton instances for convenience
 export const paymentRepository = new PaymentRepository()
+export const clientPaymentRepository = new PaymentRepository(true)

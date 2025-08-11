@@ -325,7 +325,7 @@ export function generateBundleMetadata(bundle: {
     description,
     image: bundle.image_url,
     url: `/bundles/${bundle.id}`,
-    type: 'product',
+    type: 'website',
     tags: ['book bundle', 'digital books', 'ebooks', 'discount'],
     ...(bundle.price && {
       price: {

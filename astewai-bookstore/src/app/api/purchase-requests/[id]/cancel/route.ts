@@ -14,7 +14,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -35,7 +36,7 @@ export async function POST(
     const { reason } = validationResult.data;
 
     // Get the purchase request
-    const purchaseRequest = await contactService.getPurchaseRequestById(params.id);
+    const purchaseRequest = await contactService.getPurchaseRequestById(id);
     
     if (!purchaseRequest) {
       return NextResponse.json({ error: 'Purchase request not found' }, { status: 404 });
@@ -56,7 +57,7 @@ export async function POST(
 
     // Cancel the request
     const cancelledRequest = await contactService.cancelPurchaseRequest(
-      params.id,
+      id,
       reason,
       user.id
     );

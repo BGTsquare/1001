@@ -8,7 +8,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    
+    const { id } = await paramsconst supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -21,7 +22,7 @@ export async function GET(
     }
 
     // Get book details
-    const bookResult = await bookService.getBookById(params.id)
+    const bookResult = await bookService.getBookById(id)
     
     if (!bookResult.success || !bookResult.data) {
       return NextResponse.json(
@@ -34,7 +35,7 @@ export async function GET(
 
     // Check if user owns the book or if it's free
     if (!book.is_free) {
-      const ownershipResult = await libraryService.checkBookOwnership(user.id, params.id)
+      const ownershipResult = await libraryService.checkBookOwnership(user.id, id)
       
       if (!ownershipResult.success || !ownershipResult.data?.owned) {
         return NextResponse.json(

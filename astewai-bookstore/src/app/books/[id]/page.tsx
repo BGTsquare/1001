@@ -16,7 +16,8 @@ interface BookPageProps {
  * Displays detailed information about a specific book including content preview and purchase options
  */
 export default async function BookPage({ params }: BookPageProps) {
-  const result = await bookService.getBookById(params.id)
+  const { id } = await params
+  const result = await bookService.getBookById(id)
   
   if (!result.success || !result.data) {
     notFound()
@@ -42,7 +43,8 @@ export default async function BookPage({ params }: BookPageProps) {
  * Creates SEO-optimized title, description, and Open Graph tags
  */
 export async function generateMetadata({ params }: BookPageProps) {
-  const result = await bookService.getBookById(params.id)
+  const { id } = await params
+  const result = await bookService.getBookById(id)
   
   if (!result.success || !result.data) {
     return {

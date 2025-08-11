@@ -12,7 +12,8 @@ interface BlogPostPageProps {
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = await getBlogPostBySlug(params.slug);
+  const { slug } = await params
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();
@@ -31,13 +32,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     datePublished: post.created_at,
     dateModified: post.updated_at,
     image: undefined, // We don't have featured images in our mock data
-    url: `${baseUrl}/blog/${params.slug}`,
+    url: `${baseUrl}/blog/${slug}`,
   });
 
   const breadcrumbStructuredData = generateBreadcrumbStructuredData([
     { name: 'Home', url: baseUrl },
     { name: 'Blog', url: `${baseUrl}/blog` },
-    { name: post.title, url: `${baseUrl}/blog/${params.slug}` },
+    { name: post.title, url: `${baseUrl}/blog/${slug}` },
   ]);
 
   return (
@@ -56,7 +57,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps) {
-  const post = await getBlogPostBySlug(params.slug);
+  const { slug } = await params
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     return {

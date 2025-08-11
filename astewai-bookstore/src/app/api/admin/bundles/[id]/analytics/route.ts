@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    
+    const { id } = await paramsconst supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -26,7 +27,7 @@ export async function GET(
     }
 
     // Get bundle value calculation
-    const valueResult = await bundleService.calculateBundleValue(params.id)
+    const valueResult = await bundleService.calculateBundleValue(id)
     if (!valueResult.success) {
       return NextResponse.json({ error: valueResult.error }, { status: 404 })
     }
@@ -36,7 +37,7 @@ export async function GET(
       .from('purchases')
       .select('*')
       .eq('item_type', 'bundle')
-      .eq('item_id', params.id)
+      .eq('item_id', id)
 
     if (purchaseError) {
       console.error('Error fetching purchase data:', purchaseError)
@@ -48,7 +49,7 @@ export async function GET(
       .from('purchase_requests')
       .select('*')
       .eq('item_type', 'bundle')
-      .eq('item_id', params.id)
+      .eq('item_id', id)
 
     if (requestError) {
       console.error('Error fetching purchase request data:', requestError)

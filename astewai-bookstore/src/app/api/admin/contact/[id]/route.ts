@@ -9,7 +9,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -28,7 +29,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const contact = await contactService.updateAdminContactInfo(params.id, body);
+    const contact = await contactService.updateAdminContactInfo(id, body);
     return NextResponse.json({ data: contact });
   } catch (error) {
     console.error('Error updating admin contact info:', error);
@@ -44,7 +45,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -62,7 +64,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await contactService.deleteAdminContactInfo(params.id);
+    await contactService.deleteAdminContactInfo(id);
     return NextResponse.json({ message: 'Contact information deleted successfully' });
   } catch (error) {
     console.error('Error deleting admin contact info:', error);

@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bookService } from '@/lib/services/book-service'
 
+// Add caching headers for better performance
+const CACHE_DURATION = 60 * 60 // 1 hour in seconds
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const bookId = params.id
+    
+    const { id } = await params// Validate UUID format early to avoid unnecessary DB calls
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: 'Invalid book ID format' },
+        { status: 400 }
+      )
+    }
 
     // Get the book to verify it exists
-    const bookResult = await bookService.getBookById(bookId)
+    const bookResult = await bookService.getBookById(id)
     
     if (!bookResult.success || !bookResult.data) {
       return NextResponse.json(
@@ -36,12 +47,18 @@ export async function GET(
     // For now, we'll return a mock preview
     const previewContent = generatePreviewContent(book)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       title: book.title,
       content: previewContent,
       totalPages: 250, // This would come from the actual book file
       previewPages: 25, // This would be calculated based on preview length
     })
+
+    // Add caching headers
+    response.headers.set('Cache-Control', `public, s-maxage=${CACHE_DURATION}, stale-while-revalidate=86400`)
+    response.headers.set('CDN-Cache-Control', `public, s-maxage=${CACHE_DURATION}`)
+    
+    return response
 
   } catch (error) {
     console.error('Error fetching book preview:', error)
@@ -52,7 +69,13 @@ export async function GET(
   }
 }
 
-function generatePreviewContent(book: any): string {
+interface BookPreviewData {
+    title: string
+    author: string
+    description?: string
+}
+
+function generatePreviewContent(book: BookPreviewData): string {
   return `# ${book.title}
 *by ${book.author}*
 

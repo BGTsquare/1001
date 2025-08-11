@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: { bookId: string } }
 ) {
   try {
-    const supabase = createClient()
+    const { bookId } = await params
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -20,7 +21,7 @@ export async function GET(
     }
 
     // Check book ownership
-    const result = await libraryService.checkBookOwnership(user.id, params.bookId)
+    const result = await libraryService.checkBookOwnership(user.id, bookId)
 
     if (!result.success) {
       return NextResponse.json(

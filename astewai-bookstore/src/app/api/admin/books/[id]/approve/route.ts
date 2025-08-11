@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { data: book, error: bookError } = await supabase
       .from('books')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (bookError || !book) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // approved_by: user.id,
         // approval_notes: notes
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

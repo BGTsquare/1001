@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    
+    const { id } = await paramsconst supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -25,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const result = await bundleService.getBundleById(params.id, true)
+    const result = await bundleService.getBundleById(id, true)
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 404 })
@@ -43,7 +44,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    
+    const { id } = await paramsconst supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -70,7 +72,7 @@ export async function PUT(
     if (price !== undefined) updateData.price = parseFloat(price)
     if (bookIds !== undefined) updateData.bookIds = bookIds
 
-    const result = await bundleService.updateBundle(params.id, updateData)
+    const result = await bundleService.updateBundle(id, updateData)
 
     if (!result.success) {
       return NextResponse.json({ 
@@ -91,7 +93,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient()
+    
+    const { id } = await paramsconst supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -109,7 +112,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const result = await bundleService.deleteBundle(params.id)
+    const result = await bundleService.deleteBundle(id)
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 })

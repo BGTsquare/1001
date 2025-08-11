@@ -9,14 +9,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const purchaseRequest = await contactService.getPurchaseRequestById(params.id);
+    const purchaseRequest = await contactService.getPurchaseRequestById(id);
     
     if (!purchaseRequest) {
       return NextResponse.json({ error: 'Purchase request not found' }, { status: 404 });
@@ -51,7 +52,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -77,7 +79,7 @@ export async function PUT(
     }
 
     const updatedRequest = await contactService.updatePurchaseRequestStatus(
-      params.id,
+      id,
       status,
       adminNotes
     );
@@ -97,14 +99,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const purchaseRequest = await contactService.getPurchaseRequestById(params.id);
+    const purchaseRequest = await contactService.getPurchaseRequestById(id);
     
     if (!purchaseRequest) {
       return NextResponse.json({ error: 'Purchase request not found' }, { status: 404 });
@@ -124,7 +127,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await contactService.deletePurchaseRequest(params.id);
+    await contactService.deletePurchaseRequest(id);
     return NextResponse.json({ message: 'Purchase request deleted successfully' });
   } catch (error) {
     console.error('Error deleting purchase request:', error);

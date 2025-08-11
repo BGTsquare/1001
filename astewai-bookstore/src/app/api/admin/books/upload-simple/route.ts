@@ -14,6 +14,15 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) {
       console.error('❌ Auth error:', authError)
+      
+      // Check if it's a network timeout error
+      if (authError.message?.includes('fetch failed') || authError.message?.includes('timeout')) {
+        return NextResponse.json({ 
+          error: 'Network timeout. Please check your connection and try again.', 
+          details: 'Connection to authentication service timed out'
+        }, { status: 503 }) // Service Unavailable
+      }
+      
       return NextResponse.json({ 
         error: 'Authentication failed', 
         details: authError.message 

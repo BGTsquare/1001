@@ -15,8 +15,9 @@ interface BundlePageProps {
  * Displays detailed information about a specific bundle including books, pricing, and purchase options
  */
 export default async function BundleDetailPage({ params }: BundlePageProps) {
+  const { id } = await params
   // Fetch bundle data using service layer
-  const result = await bundleService.getBundleById(params.id);
+  const result = await bundleService.getBundleById(id);
   
   if (!result.success || !result.data) {
     notFound()
@@ -26,7 +27,7 @@ export default async function BundleDetailPage({ params }: BundlePageProps) {
 
   // Prefetch with the already fetched data
   const queryClient = new QueryClient();
-  queryClient.setQueryData(["bundle", params.id], bundle);
+  queryClient.setQueryData(["bundle", id], bundle);
 
   // Generate structured data
   const structuredDataArray = generateBundlePageStructuredData(bundle);
@@ -36,7 +37,7 @@ export default async function BundleDetailPage({ params }: BundlePageProps) {
       <MultipleStructuredData dataArray={structuredDataArray} />
       <div className="container mx-auto px-4 py-8">
         <HydrationBoundary state={dehydrate(queryClient)}>
-          <BundleDetail bundleId={params.id} />
+          <BundleDetail bundle={bundle} />
         </HydrationBoundary>
       </div>
     </>
@@ -48,7 +49,8 @@ export default async function BundleDetailPage({ params }: BundlePageProps) {
  * Creates SEO-optimized title, description, and Open Graph tags
  */
 export async function generateMetadata({ params }: BundlePageProps) {
-  const result = await bundleService.getBundleById(params.id);
+  const { id } = await params
+  const result = await bundleService.getBundleById(id);
   
   if (!result.success || !result.data) {
     return {

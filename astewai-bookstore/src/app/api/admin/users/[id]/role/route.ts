@@ -6,7 +6,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient();
+    
+    const { id } = await paramsconst supabase = createClient();
     const { role } = await request.json();
 
     // Validate role
@@ -42,7 +43,7 @@ export async function PUT(
     }
 
     // Prevent admin from demoting themselves
-    if (params.id === user.id && role === 'user') {
+    if (id === user.id && role === 'user') {
       return NextResponse.json(
         { error: 'Cannot demote yourself from admin role' },
         { status: 400 }
@@ -53,7 +54,7 @@ export async function PUT(
     const { data: targetUser, error: targetUserError } = await supabase
       .from('profiles')
       .select('id, role, display_name')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (targetUserError || !targetUser) {
@@ -70,7 +71,7 @@ export async function PUT(
         role,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 

@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient()
+    
+    const { id } = await paramsconst supabase = await createClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -19,7 +20,7 @@ export async function GET(
       )
     }
 
-    const purchaseId = params.id
+    const purchaseId = id
 
     // Get purchase details
     const result = await paymentRepository.getPurchaseById(purchaseId)

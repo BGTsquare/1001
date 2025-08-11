@@ -13,9 +13,18 @@ import {
   Package, 
   DollarSign,
   TrendingUp,
-  BookOpen
+  BookOpen,
+  ChevronDown,
+  Upload
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { BundleCreateDialog } from './bundle-create-dialog'
+import { EnhancedBundleCreateDialog } from './enhanced-bundle-create-dialog'
 import { BundleEditDialog } from './bundle-edit-dialog'
 import { BundleAnalyticsDialog } from './bundle-analytics-dialog'
 import { BundleDeleteDialog } from './bundle-delete-dialog'
@@ -39,6 +48,7 @@ export function BundleManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBundle, setSelectedBundle] = useState<BundleWithBooks | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showEnhancedCreateDialog, setShowEnhancedCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -149,10 +159,25 @@ export function BundleManager() {
             Create and manage book bundles
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Bundle
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Bundle
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setShowCreateDialog(true)}>
+              <Package className="w-4 h-4 mr-2" />
+              From Existing Books
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowEnhancedCreateDialog(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Upload New Books
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Search and Filters */}
@@ -221,10 +246,25 @@ export function BundleManager() {
                   {searchQuery ? 'Try adjusting your search terms' : 'Create your first bundle to get started'}
                 </p>
                 {!searchQuery && (
-                  <Button onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Bundle
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Bundle
+                        <ChevronDown className="w-4 h-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center">
+                      <DropdownMenuItem onClick={() => setShowCreateDialog(true)}>
+                        <Package className="w-4 h-4 mr-2" />
+                        From Existing Books
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowEnhancedCreateDialog(true)}>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload New Books
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </CardContent>
@@ -357,6 +397,12 @@ export function BundleManager() {
       <BundleCreateDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <EnhancedBundleCreateDialog
+        open={showEnhancedCreateDialog}
+        onOpenChange={setShowEnhancedCreateDialog}
         onSuccess={handleCreateSuccess}
       />
 
