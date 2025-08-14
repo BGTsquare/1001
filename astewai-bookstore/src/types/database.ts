@@ -251,8 +251,12 @@ export type Database = {
           item_type: 'book' | 'bundle'
           item_id: string
           amount: number
-          status: 'pending' | 'approved' | 'rejected' | 'completed'
+          status: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected'
           payment_provider_id: string | null
+          transaction_reference: string | null
+          telegram_chat_id: number | null
+          telegram_user_id: number | null
+          initiation_token: string | null
           created_at: string
           updated_at: string
         }
@@ -262,8 +266,12 @@ export type Database = {
           item_type: 'book' | 'bundle'
           item_id: string
           amount: number
-          status?: 'pending' | 'approved' | 'rejected' | 'completed'
+          status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected'
           payment_provider_id?: string | null
+          transaction_reference?: string | null
+          telegram_chat_id?: number | null
+          telegram_user_id?: number | null
+          initiation_token?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -273,8 +281,12 @@ export type Database = {
           item_type?: 'book' | 'bundle'
           item_id?: string
           amount?: number
-          status?: 'pending' | 'approved' | 'rejected' | 'completed'
+          status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected'
           payment_provider_id?: string | null
+          transaction_reference?: string | null
+          telegram_chat_id?: number | null
+          telegram_user_id?: number | null
+          initiation_token?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -429,6 +441,45 @@ export type Database = {
             referencedColumns: ["id"]
           }
         ]
+      }
+      payment_config: {
+        Row: {
+          id: string
+          config_type: 'bank_account' | 'mobile_money'
+          provider_name: string
+          account_number: string
+          account_name: string
+          instructions: string | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          config_type: 'bank_account' | 'mobile_money'
+          provider_name: string
+          account_number: string
+          account_name: string
+          instructions?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          config_type?: 'bank_account' | 'mobile_money'
+          provider_name?: string
+          account_number?: string
+          account_name?: string
+          instructions?: string | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       push_subscriptions: {
         Row: {

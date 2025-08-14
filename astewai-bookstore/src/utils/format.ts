@@ -1,10 +1,15 @@
 // Utility functions for formatting data
 
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(price);
+  if (price === 0) {
+    return 'Free';
+  }
+  
+  // Price is already in Ethiopian Birr - no conversion needed
+  const birrAmount = Math.round(price);
+  
+  // Format as Ethiopian Birr
+  return `${birrAmount.toLocaleString()} ETB`;
 }
 
 export function formatDate(date: string | Date): string {

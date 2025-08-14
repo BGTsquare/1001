@@ -27,16 +27,15 @@ export function BlogDeleteDialog({ open, post, onClose }: BlogDeleteDialogProps)
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // TODO: Implement actual blog post deletion API call
-      console.log('Deleting blog post:', post.id);
+      const { deleteBlogPost } = await import('@/lib/repositories/blogRepository');
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await deleteBlogPost(post.id);
       
       // Close dialog
       onClose();
     } catch (error) {
       console.error('Error deleting blog post:', error);
+      // You might want to show a toast notification here
     } finally {
       setIsDeleting(false);
     }

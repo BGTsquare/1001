@@ -2,7 +2,7 @@ import { generateMetadata } from '@/lib/seo/metadata';
 import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
 import { StructuredData } from '@/components/seo/structured-data';
 import { BlogList } from '@/components/blog';
-import { getBlogPosts } from '@/lib/repositories/blogRepository';
+import { getBlogPosts } from '@/lib/database';
 
 export const metadata = generateMetadata({
   title: 'Blog - Book Reviews, Reading Tips & Author Interviews',

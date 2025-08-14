@@ -1,51 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
+import { withAdminAuth } from '@/lib/middleware/auth-middleware'
+import { bookService } from '@/lib/services/book-service'
 
 interface RouteParams {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { id } = await params
+    const result = await bookService.getBookById(id)
+
+    if (!result.success) {
+      const status = result.error === 'Book not found' ? 404 : 400
+      return NextResponse.json(
+        { error: result.error, validationErrors: result.validationErrors },
+        { status }
+      )
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Get book using admin client
-    const { data: book, error: bookError } = await supabaseAdmin
-      .from('books')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (bookError) {
-      console.error('Error fetching book:', bookError)
-      if (bookError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Book not found' }, { status: 404 })
-      }
-      return NextResponse.json({ error: 'Failed to fetch book' }, { status: 500 })
-    }
-
-    return NextResponse.json(book)
-
+    return NextResponse.json(result.data)
   } catch (error) {
     console.error('Error in GET /api/admin/books/[id]:', error)
     return NextResponse.json(
@@ -53,58 +27,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export const PUT = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Parse request body
+    const { id } = await params
     const updateData = await request.json()
-    console.log('Updating book:', id, 'with data:', Object.keys(updateData))
+    
+    const result = await bookService.updateBook(id, updateData)
 
-    // Update book using admin client
-    const { data: updatedBook, error: updateError } = await supabaseAdmin
-      .from('books')
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (updateError) {
-      console.error('Error updating book:', updateError)
-      if (updateError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Book not found' }, { status: 404 })
-      }
-      return NextResponse.json({ 
-        error: 'Failed to update book',
-        details: updateError.message 
-      }, { status: 500 })
+    if (!result.success) {
+      const status = result.error === 'Book not found' ? 404 : 400
+      return NextResponse.json(
+        { error: result.error, validationErrors: result.validationErrors },
+        { status }
+      )
     }
 
-    console.log('✅ Book updated successfully:', updatedBook.id)
-    return NextResponse.json(updatedBook)
-
+    return NextResponse.json(result.data)
   } catch (error) {
     console.error('Error in PUT /api/admin/books/[id]:', error)
     return NextResponse.json(
@@ -112,46 +52,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { id } = await params
+    const result = await bookService.deleteBook(id)
+
+    if (!result.success) {
+      const status = result.error === 'Book not found' ? 404 : 400
+      return NextResponse.json(
+        { error: result.error, validationErrors: result.validationErrors },
+        { status }
+      )
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Delete book using admin client
-    const { error: deleteError } = await supabaseAdmin
-      .from('books')
-      .delete()
-      .eq('id', id)
-
-    if (deleteError) {
-      console.error('Error deleting book:', deleteError)
-      return NextResponse.json({ 
-        error: 'Failed to delete book',
-        details: deleteError.message 
-      }, { status: 500 })
-    }
-
-    console.log('✅ Book deleted successfully:', id)
-    return NextResponse.json({ message: 'Book deleted successfully' })
-
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/admin/books/[id]:', error)
     return NextResponse.json(
@@ -159,4 +75,4 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
-}
+})

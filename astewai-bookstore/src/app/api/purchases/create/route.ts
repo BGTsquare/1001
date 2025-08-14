@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { purchaseService } from '@/lib/services/purchase-service'
+import { PaymentConfigService } from '@/lib/services/payment-config-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,9 +57,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get payment instructions for manual payment
+    const paymentConfigService = new PaymentConfigService()
+    const paymentInstructionsResult = await paymentConfigService.getActivePaymentMethods()
+    
     return NextResponse.json({
-      message: 'Purchase initiated successfully',
-      ...result.data
+      success: true,
+      data: {
+        purchaseId: result.data.purchase.id,
+        transactionReference: result.data.transactionReference,
+        amount: result.data.amount,
+        itemTitle: result.data.itemTitle,
+        itemType: result.data.itemType,
+        paymentInstructions: paymentInstructionsResult.data || []
+      }
     })
 
   } catch (error) {

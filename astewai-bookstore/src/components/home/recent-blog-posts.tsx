@@ -10,7 +10,14 @@ import { formatDate } from '@/utils/format';
 export function RecentBlogPosts() {
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts', 'recent'],
-    queryFn: () => getBlogPosts({ limit: 3, published: true }),
+    queryFn: async () => {
+      try {
+        return await getBlogPosts({ limit: 3, published: true });
+      } catch (error) {
+        console.error('Error fetching recent blog posts:', error);
+        return [];
+      }
+    },
   });
 
   if (isLoading) {

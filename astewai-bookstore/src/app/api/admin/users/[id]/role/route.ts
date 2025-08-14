@@ -7,7 +7,8 @@ export async function PUT(
 ) {
   try {
     
-    const { id } = await paramsconst supabase = createClient();
+    const { id } = await params
+    const supabase = createClient();
     const { role } = await request.json();
 
     // Validate role

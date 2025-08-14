@@ -1,305 +1,144 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { vi } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { BookActions } from '../book-actions'
+import { useAuth } from '@/contexts/auth-context'
+import { useBookOwnership } from '@/hooks/use-book-ownership'
+import { useBookActions } from '@/hooks/use-book-actions'
 import type { Book } from '@/types'
 
-// Mock the auth context
-const mockUser = { id: '1', email: 'test@example.com' }
-const mockUseAuth = vi.fn()
-
-vi.mock('@/contexts/auth-context', () => ({
-  useAuth: () => mockUseAuth()
-}))
-
-// Mock Next.js router
-const mockPush = vi.fn()
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush
-  })
-}))
-
-// Mock sonner toast
-const mockToast = {
-  success: vi.fn(),
-  error: vi.fn()
-}
-vi.mock('sonner', () => ({
-  toast: mockToast
-}))
-
-// Mock fetch
-global.fetch = vi.fn()
+// Mock the hooks
+vi.mock('@/contexts/auth-context')
+vi.mock('@/hooks/use-book-ownership')
+vi.mock('@/hooks/use-book-actions')
 
 const mockBook: Book = {
-  id: '1',
+  id: 'test-book-id',
   title: 'Test Book',
   author: 'Test Author',
-  description: 'Test description',
+  description: 'Test Description',
+  price: 29.99,
+  is_free: false,
+  category: 'Technology',
+  tags: ['programming'],
   cover_image_url: null,
   content_url: null,
-  price: 19.99,
-  is_free: false,
-  category: null,
-  tags: null,
   created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z'
+  updated_at: '2024-01-01T00:00:00Z',
 }
 
 const mockFreeBook: Book = {
   ...mockBook,
-  id: '2',
-  title: 'Free Test Book',
   price: 0,
-  is_free: true
+  is_free: true,
 }
 
 describe('BookActions', () => {
+  const mockHandleReadNow = vi.fn()
+  const mockHandleAddToLibrary = vi.fn()
+  const mockHandlePurchase = vi.fn()
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseAuth.mockReturnValue({ user: mockUser })
-  })
-
-  describe('Free Books', () => {
-    it('shows "Add to Library" button for free books', () => {
-      render(<BookActions book={mockFreeBook} />)
-      
-      expect(screen.getByText('Add to Library')).toBeInTheDocument()
-      expect(screen.queryByText('Buy Now')).not.toBeInTheDocument()
+    
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 'user-id', email: 'test@example.com' },
+      loading: false,
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      signUp: vi.fn(),
     })
 
-    it('adds free book to library successfully', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ message: 'Book added to your library successfully!' })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockFreeBook} />)
-      
-      const addButton = screen.getByText('Add to Library')
-      fireEvent.click(addButton)
-
-      expect(screen.getByText('Adding...')).toBeInTheDocument()
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('/api/library/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            bookId: '2',
-          }),
-        })
-      })
-
-      await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Book added to your library!')
-        expect(mockPush).toHaveBeenCalledWith('/library')
-      })
-    })
-
-    it('handles add to library error', async () => {
-      const mockResponse = {
-        ok: false,
-        json: () => Promise.resolve({ error: 'Book is already in your library' })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockFreeBook} />)
-      
-      const addButton = screen.getByText('Add to Library')
-      fireEvent.click(addButton)
-
-      await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith('Book is already in your library')
-      })
-    })
-
-    it('redirects to login when user is not authenticated', () => {
-      mockUseAuth.mockReturnValue({ user: null })
-      
-      render(<BookActions book={mockFreeBook} />)
-      
-      const addButton = screen.getByText('Add to Library')
-      fireEvent.click(addButton)
-
-      expect(mockPush).toHaveBeenCalledWith('/auth/login?redirect=/books/2')
+    vi.mocked(useBookActions).mockReturnValue({
+      isAddingToLibrary: false,
+      isPurchasing: false,
+      handleReadNow: mockHandleReadNow,
+      handleAddToLibrary: mockHandleAddToLibrary,
+      handlePurchase: mockHandlePurchase,
     })
   })
 
-  describe('Paid Books', () => {
-    it('shows both "Buy Now" and "Add to Wishlist" buttons for paid books', () => {
-      render(<BookActions book={mockBook} />)
-      
-      expect(screen.getByText('Buy Now')).toBeInTheDocument()
-      expect(screen.getByText('Add to Wishlist')).toBeInTheDocument()
+  it('shows loading state when checking ownership', () => {
+    vi.mocked(useBookOwnership).mockReturnValue({
+      isOwned: false,
+      isLoading: true,
+      error: null,
+      setIsOwned: vi.fn(),
     })
 
-    it('initiates purchase successfully', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ 
-          message: 'Purchase request created successfully.',
-          checkoutUrl: 'https://checkout.stripe.com/test'
-        })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      // Mock window.location.href
-      delete (window as any).location
-      ;(window as any).location = { href: '' }
-
-      render(<BookActions book={mockBook} />)
-      
-      const buyButton = screen.getByText('Buy Now')
-      fireEvent.click(buyButton)
-
-      expect(screen.getByText('Processing...')).toBeInTheDocument()
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('/api/purchases/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            itemType: 'book',
-            itemId: '1',
-            amount: 19.99,
-          }),
-        })
-      })
-
-      await waitFor(() => {
-        expect(window.location.href).toBe('https://checkout.stripe.com/test')
-      })
-    })
-
-    it('handles manual approval flow', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ 
-          message: 'Purchase request submitted for approval!'
-        })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockBook} />)
-      
-      const buyButton = screen.getByText('Buy Now')
-      fireEvent.click(buyButton)
-
-      await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Purchase request submitted for approval!')
-        expect(mockPush).toHaveBeenCalledWith('/profile?tab=purchases')
-      })
-    })
-
-    it('handles purchase error', async () => {
-      const mockResponse = {
-        ok: false,
-        json: () => Promise.resolve({ error: 'You have already purchased this item' })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockBook} />)
-      
-      const buyButton = screen.getByText('Buy Now')
-      fireEvent.click(buyButton)
-
-      await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith('You have already purchased this item')
-      })
-    })
-
-    it('adds paid book to wishlist', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => Promise.resolve({ message: 'Book added to your wishlist!' })
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockBook} />)
-      
-      const wishlistButton = screen.getByText('Add to Wishlist')
-      fireEvent.click(wishlistButton)
-
-      expect(screen.getByText('Adding...')).toBeInTheDocument()
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('/api/library/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            bookId: '1',
-          }),
-        })
-      })
-
-      await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Book added to your library!')
-        expect(mockPush).toHaveBeenCalledWith('/library')
-      })
-    })
-
-    it('redirects to login when user is not authenticated for purchase', () => {
-      mockUseAuth.mockReturnValue({ user: null })
-      
-      render(<BookActions book={mockBook} />)
-      
-      const buyButton = screen.getByText('Buy Now')
-      fireEvent.click(buyButton)
-
-      expect(mockPush).toHaveBeenCalledWith('/auth/login?redirect=/books/1')
-    })
-
-    it('redirects to login when user is not authenticated for wishlist', () => {
-      mockUseAuth.mockReturnValue({ user: null })
-      
-      render(<BookActions book={mockBook} />)
-      
-      const wishlistButton = screen.getByText('Add to Wishlist')
-      fireEvent.click(wishlistButton)
-
-      expect(mockPush).toHaveBeenCalledWith('/auth/login?redirect=/books/1')
-    })
+    render(<BookActions book={mockBook} />)
+    
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
   })
 
-  describe('Loading States', () => {
-    it('shows loading state during add to library', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => new Promise(resolve => setTimeout(() => resolve({ message: 'Success' }), 100))
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
-
-      render(<BookActions book={mockFreeBook} />)
-      
-      const addButton = screen.getByText('Add to Library')
-      fireEvent.click(addButton)
-
-      expect(screen.getByText('Adding...')).toBeInTheDocument()
-      expect(addButton).toBeDisabled()
+  it('shows "Read Now" button when user owns the book', () => {
+    vi.mocked(useBookOwnership).mockReturnValue({
+      isOwned: true,
+      isLoading: false,
+      error: null,
+      setIsOwned: vi.fn(),
     })
 
-    it('shows loading state during purchase', async () => {
-      const mockResponse = {
-        ok: true,
-        json: () => new Promise(resolve => setTimeout(() => resolve({ message: 'Success' }), 100))
-      }
-      ;(global.fetch as any).mockResolvedValueOnce(mockResponse)
+    render(<BookActions book={mockBook} />)
+    
+    const readButton = screen.getByText('Read Now')
+    expect(readButton).toBeInTheDocument()
+    
+    fireEvent.click(readButton)
+    expect(mockHandleReadNow).toHaveBeenCalled()
+  })
 
-      render(<BookActions book={mockBook} />)
-      
-      const buyButton = screen.getByText('Buy Now')
-      fireEvent.click(buyButton)
-
-      expect(screen.getByText('Processing...')).toBeInTheDocument()
-      expect(buyButton).toBeDisabled()
+  it('shows "Add to Library" button for free books', () => {
+    vi.mocked(useBookOwnership).mockReturnValue({
+      isOwned: false,
+      isLoading: false,
+      error: null,
+      setIsOwned: vi.fn(),
     })
+
+    render(<BookActions book={mockFreeBook} />)
+    
+    const addButton = screen.getByText('Add to Library')
+    expect(addButton).toBeInTheDocument()
+    
+    fireEvent.click(addButton)
+    expect(mockHandleAddToLibrary).toHaveBeenCalled()
+  })
+
+  it('shows purchase options for paid books', () => {
+    vi.mocked(useBookOwnership).mockReturnValue({
+      isOwned: false,
+      isLoading: false,
+      error: null,
+      setIsOwned: vi.fn(),
+    })
+
+    render(<BookActions book={mockBook} />)
+    
+    const buyButton = screen.getByText('Buy Now')
+    expect(buyButton).toBeInTheDocument()
+    
+    fireEvent.click(buyButton)
+    expect(mockHandlePurchase).toHaveBeenCalled()
+  })
+
+  it('shows loading state during purchase', () => {
+    vi.mocked(useBookOwnership).mockReturnValue({
+      isOwned: false,
+      isLoading: false,
+      error: null,
+      setIsOwned: vi.fn(),
+    })
+
+    vi.mocked(useBookActions).mockReturnValue({
+      isAddingToLibrary: false,
+      isPurchasing: true,
+      handleReadNow: mockHandleReadNow,
+      handleAddToLibrary: mockHandleAddToLibrary,
+      handlePurchase: mockHandlePurchase,
+    })
+
+    render(<BookActions book={mockBook} />)
+    
+    expect(screen.getByText('Processing...')).toBeInTheDocument()
   })
 })

@@ -444,18 +444,23 @@ export function BookUpload({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Price</label>
+              <label className="text-sm font-medium">Price (ETB)</label>
               <div className="flex items-center space-x-2">
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => handlePriceChange(e.target.value)}
-                  placeholder="0.00"
-                  disabled={formData.is_free}
-                  className={cn(errors.price && 'border-destructive')}
-                />
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.price}
+                    onChange={(e) => handlePriceChange(e.target.value)}
+                    placeholder="0"
+                    disabled={formData.is_free}
+                    className={cn("pl-12", errors.price && 'border-destructive')}
+                  />
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                    ETB
+                  </span>
+                </div>
                 <Button
                   type="button"
                   variant={formData.is_free ? 'default' : 'outline'}

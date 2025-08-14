@@ -1,177 +1,259 @@
-import { createClient } from '@/lib/supabase/server';
 import type { AdminContactInfo, PurchaseRequest, ContactMethod } from '@/types';
+import { BaseRepository, type RepositoryResult } from './base-repository';
 
-export class ContactRepository {
-  private supabase = createClient();
+/**
+ * Repository for managing admin contact information and purchase requests
+ * Handles CRUD operations for admin contact details and purchase request workflow
+ */
+export class ContactRepository extends BaseRepository {
+  constructor(isClient = false) {
+    super(isClient);
+  }
 
   // Admin contact info methods
-  async getAdminContactInfo(adminId: string): Promise<AdminContactInfo[]> {
-    const { data, error } = await this.supabase
-      .from('admin_contact_info')
-      .select('*')
-      .eq('admin_id', adminId)
-      .eq('is_active', true)
-      .order('contact_type', { ascending: true });
+  
+  /**
+   * Get all active contact information for a specific admin
+   * @param adminId - The UUID of the admin user
+   * @returns Promise resolving to admin contact information array
+   */
+  async getAdminContactInfo(adminId: string): Promise<RepositoryResult<AdminContactInfo[]>> {
+    try {
+      const supabase = await this.getSupabaseClient();
+      const { data, error } = await supabase
+        .from('admin_contact_info')
+        .select('*')
+        .eq('admin_id', adminId)
+        .eq('is_active', true)
+        .order('contact_type', { ascending: true });
 
-    if (error) {
-      throw new Error(`Failed to fetch admin contact info: ${error.message}`);
+      if (error) {
+        console.error('Error fetching admin contact info:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('Unexpected error fetching admin contact info:', error);
+      return { success: false, error: 'Failed to fetch admin contact info' };
     }
-
-    return data || [];
   }
 
-  async getActiveAdminContacts(): Promise<AdminContactInfo[]> {
-    const { data, error } = await this.supabase
-      .from('admin_contact_info')
-      .select('*')
-      .eq('is_active', true)
-      .order('contact_type', { ascending: true });
+  async getActiveAdminContacts(): Promise<RepositoryResult<AdminContactInfo[]>> {
+    try {
+      const supabase = await this.getSupabaseClient();
+      const { data, error } = await supabase
+        .from('admin_contact_info')
+        .select('*')
+        .eq('is_active', true)
+        .order('contact_type', { ascending: true });
 
-    if (error) {
-      throw new Error(`Failed to fetch active admin contacts: ${error.message}`);
+      if (error) {
+        console.error('Error fetching active admin contacts:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('Unexpected error fetching active admin contacts:', error);
+      return { success: false, error: 'Failed to fetch active admin contacts' };
     }
-
-    return data || [];
   }
 
-  async getPrimaryAdminContacts(): Promise<AdminContactInfo[]> {
-    const { data, error } = await this.supabase
-      .from('admin_contact_info')
-      .select('*')
-      .eq('is_active', true)
-      .eq('is_primary', true)
-      .order('contact_type', { ascending: true });
+  async getPrimaryAdminContacts(): Promise<RepositoryResult<AdminContactInfo[]>> {
+    try {
+      const supabase = await this.getSupabaseClient();
+      const { data, error } = await supabase
+        .from('admin_contact_info')
+        .select('*')
+        .eq('is_active', true)
+        .eq('is_primary', true)
+        .order('contact_type', { ascending: true });
 
-    if (error) {
-      throw new Error(`Failed to fetch primary admin contacts: ${error.message}`);
+      if (error) {
+        console.error('Error fetching primary admin contacts:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      console.error('Unexpected error fetching primary admin contacts:', error);
+      return { success: false, error: 'Failed to fetch primary admin contacts' };
     }
-
-    return data || [];
   }
 
-  async createAdminContactInfo(contactInfo: Omit<AdminContactInfo, 'id' | 'created_at' | 'updated_at'>): Promise<AdminContactInfo> {
-    const { data, error } = await this.supabase
-      .from('admin_contact_info')
-      .insert(contactInfo)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create admin contact info: ${error.message}`);
-    }
-
-    return data;
+  async createAdminContactInfo(contactInfo: Omit<AdminContactInfo, 'id' | 'created_at' | 'updated_at'>): Promise<RepositoryResult<AdminContactInfo>> {
+    return this.executeQuery(
+      'create admin contact info',
+      async (supabase) => supabase
+        .from('admin_contact_info')
+        .insert(contactInfo)
+        .select()
+        .single()
+    );
   }
 
-  async updateAdminContactInfo(id: string, updates: Partial<AdminContactInfo>): Promise<AdminContactInfo> {
-    const { data, error } = await this.supabase
-      .from('admin_contact_info')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update admin contact info: ${error.message}`);
-    }
-
-    return data;
+  async updateAdminContactInfo(id: string, updates: Partial<AdminContactInfo>): Promise<RepositoryResult<AdminContactInfo>> {
+    return this.executeQuery(
+      'update admin contact info',
+      async (supabase) => supabase
+        .from('admin_contact_info')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+    );
   }
 
-  async deleteAdminContactInfo(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('admin_contact_info')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Failed to delete admin contact info: ${error.message}`);
-    }
+  async deleteAdminContactInfo(id: string): Promise<RepositoryResult<boolean>> {
+    return this.executeQuery(
+      'delete admin contact info',
+      async (supabase) => {
+        const { error } = await supabase
+          .from('admin_contact_info')
+          .delete()
+          .eq('id', id);
+        return { data: true, error };
+      }
+    );
   }
 
   // Purchase request methods
-  async getPurchaseRequests(userId?: string): Promise<PurchaseRequest[]> {
-    let query = this.supabase
-      .from('purchase_requests')
-      .select(`
-        *,
-        book:books(id, title, author, price, cover_image_url),
-        bundle:bundles(id, title, price)
-      `)
-      .order('created_at', { ascending: false });
+  async getPurchaseRequests(userId?: string, limit: number = 50, offset: number = 0): Promise<RepositoryResult<PurchaseRequest[]>> {
+    return this.executeQuery(
+      'fetch purchase requests',
+      async (supabase) => {
+        let query = supabase
+          .from('purchase_requests')
+          .select(`
+            *,
+            book:books(id, title, author, price, cover_image_url),
+            bundle:bundles(id, title, price)
+          `)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
 
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`Failed to fetch purchase requests: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  async getPurchaseRequestById(id: string): Promise<PurchaseRequest | null> {
-    const { data, error } = await this.supabase
-      .from('purchase_requests')
-      .select(`
-        *,
-        book:books(id, title, author, price, cover_image_url),
-        bundle:bundles(id, title, price)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // Not found
+        return query;
       }
-      throw new Error(`Failed to fetch purchase request: ${error.message}`);
-    }
-
-    return data;
+    );
   }
 
-  async createPurchaseRequest(request: Omit<PurchaseRequest, 'id' | 'created_at' | 'updated_at' | 'status' | 'contacted_at' | 'responded_at' | 'admin_notes'>): Promise<PurchaseRequest> {
-    const { data, error } = await this.supabase
-      .from('purchase_requests')
-      .insert({
-        ...request,
-        status: 'pending'
-      })
-      .select(`
-        *,
-        book:books(id, title, author, price, cover_image_url),
-        bundle:bundles(id, title, price)
-      `)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create purchase request: ${error.message}`);
-    }
-
-    return data;
+  async getPurchaseRequestById(id: string): Promise<RepositoryResult<PurchaseRequest | null>> {
+    return this.executeQuery(
+      'fetch purchase request by id',
+      async (supabase) => supabase
+        .from('purchase_requests')
+        .select(`
+          *,
+          book:books(id, title, author, price, cover_image_url),
+          bundle:bundles(id, title, price)
+        `)
+        .eq('id', id)
+        .single()
+    );
   }
 
-  async updatePurchaseRequest(id: string, updates: Partial<PurchaseRequest>): Promise<PurchaseRequest> {
-    const { data, error } = await this.supabase
-      .from('purchase_requests')
-      .update(updates)
-      .eq('id', id)
-      .select(`
-        *,
-        book:books(id, title, author, price, cover_image_url),
-        bundle:bundles(id, title, price)
-      `)
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update purchase request: ${error.message}`);
+  /**
+   * Batch operation to get multiple purchase requests by IDs
+   */
+  async getPurchaseRequestsByIds(ids: string[]): Promise<RepositoryResult<PurchaseRequest[]>> {
+    if (ids.length === 0) {
+      return { success: true, data: [] };
     }
 
-    return data;
+    return this.executeQuery(
+      'fetch purchase requests by ids',
+      async (supabase) => supabase
+        .from('purchase_requests')
+        .select(`
+          *,
+          book:books(id, title, author, price, cover_image_url),
+          bundle:bundles(id, title, price)
+        `)
+        .in('id', ids)
+        .order('created_at', { ascending: false })
+    );
+  }
+
+  async createPurchaseRequest(
+    request: Omit<PurchaseRequest, 'id' | 'created_at' | 'updated_at' | 'status' | 'contacted_at' | 'responded_at' | 'admin_notes'>
+  ): Promise<RepositoryResult<PurchaseRequest>> {
+    // Input validation
+    if (!request.user_id || !request.item_id || !request.item_type) {
+      return { 
+        success: false, 
+        error: 'Missing required fields: user_id, item_id, and item_type are required',
+        code: 'VALIDATION_ERROR',
+        status: 400
+      };
+    }
+
+    if (request.amount < 0) {
+      return { 
+        success: false, 
+        error: 'Amount must be non-negative',
+        code: 'VALIDATION_ERROR',
+        status: 400
+      };
+    }
+
+    return this.executeQuery(
+      'create purchase request',
+      async (supabase) => supabase
+        .from('purchase_requests')
+        .insert({
+          ...request,
+          status: 'pending'
+        })
+        .select(`
+          *,
+          book:books(id, title, author, price, cover_image_url),
+          bundle:bundles(id, title, price)
+        `)
+        .single()
+    );
+  }
+
+  /**
+   * Update a purchase request with validation and audit trail
+   * @param id - Purchase request ID
+   * @param updates - Partial updates to apply
+   * @returns Promise resolving to updated purchase request
+   */
+  async updatePurchaseRequest(id: string, updates: Partial<PurchaseRequest>): Promise<RepositoryResult<PurchaseRequest>> {
+    // Security validation - prevent updating sensitive fields without proper authorization
+    const restrictedFields = ['user_id', 'item_id', 'item_type', 'amount'];
+    const hasRestrictedUpdates = restrictedFields.some(field => field in updates);
+    
+    if (hasRestrictedUpdates) {
+      return {
+        success: false,
+        error: 'Cannot update restricted fields through this method',
+        code: 'FORBIDDEN',
+        status: 403
+      };
+    }
+
+    return this.executeQuery(
+      'update purchase request',
+      async (supabase) => supabase
+        .from('purchase_requests')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          book:books(id, title, author, price, cover_image_url),
+          bundle:bundles(id, title, price)
+        `)
+        .single()
+    );
   }
 
   async updatePurchaseRequestStatus(
@@ -195,7 +277,8 @@ export class ContactRepository {
   }
 
   async deletePurchaseRequest(id: string): Promise<void> {
-    const { error } = await this.supabase
+    const supabase = await this.getSupabaseClient();
+    const { error } = await supabase
       .from('purchase_requests')
       .delete()
       .eq('id', id);
@@ -214,7 +297,8 @@ export class ContactRepository {
     rejected: number;
     completed: number;
   }> {
-    const { data, error } = await this.supabase
+    const supabase = await this.getSupabaseClient();
+    const { data, error } = await supabase
       .from('purchase_requests')
       .select('status');
 
@@ -238,3 +322,7 @@ export class ContactRepository {
     return stats;
   }
 }
+
+// Export singleton instances for convenience
+export const contactRepository = new ContactRepository();
+export const clientContactRepository = new ContactRepository(true);

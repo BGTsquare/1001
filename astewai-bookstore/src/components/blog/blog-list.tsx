@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BlogCard } from './blog-card';
 import { BlogFilter } from './blog-filter';
-import { getBlogPosts, BlogPost } from '@/lib/repositories/blogRepository';
+import { BlogPost } from '@/lib/repositories/blogRepository';
+import { getBlogPosts } from '@/lib/repositories/blogRepository';
 import { LoadingSkeletons } from '@/components/ui/loading-skeletons';
 
 interface BlogListProps {
@@ -17,7 +18,14 @@ export function BlogList({ initialPosts }: BlogListProps) {
 
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts', 'all'],
-    queryFn: () => getBlogPosts({ published: true }),
+    queryFn: async () => {
+      try {
+        return await getBlogPosts({ published: true });
+      } catch (error) {
+        console.error('Error fetching blog posts in BlogList:', error);
+        return [];
+      }
+    },
     initialData: initialPosts,
   });
 

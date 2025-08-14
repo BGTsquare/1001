@@ -138,17 +138,24 @@ export function BlogCreateDialog({ open, onClose }: BlogCreateDialogProps) {
   const onSubmit = async (data: BlogPostFormData) => {
     setIsSubmitting(true);
     try {
-      // TODO: Implement actual blog post creation API call
-      console.log('Creating blog post:', data);
+      const { createBlogPost } = await import('@/lib/repositories/blogRepository');
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await createBlogPost({
+        title: data.title,
+        excerpt: data.excerpt,
+        content: data.content,
+        category: data.category,
+        tags: data.tags,
+        published: data.published,
+        // Remove undefined featured_image_url reference
+      });
       
       // Reset form and close dialog
       reset();
       onClose();
     } catch (error) {
       console.error('Error creating blog post:', error);
+      // TODO: Add proper error handling with toast notification
     } finally {
       setIsSubmitting(false);
     }

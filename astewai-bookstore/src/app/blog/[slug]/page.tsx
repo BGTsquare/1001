@@ -3,7 +3,8 @@ import { generateBlogPostMetadata } from '@/lib/seo/metadata';
 import { generateArticleStructuredData, generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
 import { MultipleStructuredData } from '@/components/seo/structured-data';
 import { BlogPost } from '@/components/blog';
-import { getBlogPostBySlug, getRelatedBlogPosts } from '@/lib/repositories/blogRepository';
+import { getBlogPostById } from '@/lib/database';
+import { getRelatedBlogPosts } from '@/lib/repositories/blogRepository';
 
 interface BlogPostPageProps {
   params: {
@@ -13,7 +14,7 @@ interface BlogPostPageProps {
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
-  const post = await getBlogPostBySlug(slug);
+  const post = await getBlogPostById(slug);
 
   if (!post) {
     notFound();
@@ -58,7 +59,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
 export async function generateMetadata({ params }: BlogPostPageProps) {
   const { slug } = await params
-  const post = await getBlogPostBySlug(slug);
+  const post = await getBlogPostById(slug);
 
   if (!post) {
     return {

@@ -155,16 +155,22 @@ export function BlogEditDialog({ open, post, onClose }: BlogEditDialogProps) {
   const onSubmit = async (data: BlogPostFormData) => {
     setIsSubmitting(true);
     try {
-      // TODO: Implement actual blog post update API call
-      console.log('Updating blog post:', { id: post.id, ...data });
+      const { updateBlogPost } = await import('@/lib/repositories/blogRepository');
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await updateBlogPost(post.id, {
+        title: data.title,
+        excerpt: data.excerpt,
+        content: data.content,
+        category: data.category,
+        tags: data.tags,
+        published: data.published,
+      });
       
       // Close dialog
       onClose();
     } catch (error) {
       console.error('Error updating blog post:', error);
+      // You might want to show a toast notification here
     } finally {
       setIsSubmitting(false);
     }

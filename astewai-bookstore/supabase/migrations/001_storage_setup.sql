@@ -1,9 +1,9 @@
 -- Storage Setup for Astewai Digital Bookstore
 -- This migration creates the necessary storage buckets and policies
 
--- =============================================
+-- 
 -- STORAGE BUCKETS
--- =============================================
+-- 
 
 -- Create bucket for book covers
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -15,14 +15,22 @@ VALUES (
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 ) ON CONFLICT (id) DO NOTHING;
 
--- Create bucket for book content (PDFs, EPUBs, etc.)
+-- Create bucket for book content (PDFs, EPUBs, text, markdown, etc.)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'book-content',
   'book-content',
   false, -- Private bucket for purchased content
   52428800, -- 50MB limit
-  ARRAY['application/pdf', 'application/epub+zip', 'text/plain', 'application/zip']
+  ARRAY[
+    'application/pdf', 
+    'application/epub+zip', 
+    'text/plain', 
+    'text/markdown',
+    'text/html',
+    'application/json',
+    'application/zip'
+  ]
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Create bucket for blog post images
@@ -45,9 +53,7 @@ VALUES (
   ARRAY['image/jpeg', 'image/png', 'image/webp']
 ) ON CONFLICT (id) DO NOTHING;
 
--- =============================================
 -- STORAGE POLICIES
--- =============================================
 
 -- Book covers policies (public read, admin write)
 CREATE POLICY "Book covers are publicly viewable" ON storage.objects

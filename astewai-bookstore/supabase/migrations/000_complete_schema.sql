@@ -6,9 +6,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
--- =============================================
 -- CORE TABLES
--- =============================================
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
@@ -112,9 +110,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   UNIQUE(user_id, book_id)
 );
 
--- =============================================
 -- ADMIN CONTACT SYSTEM
--- =============================================
 
 -- Create admin_contact_info table
 CREATE TABLE IF NOT EXISTS admin_contact_info (
@@ -147,9 +143,7 @@ CREATE TABLE IF NOT EXISTS purchase_requests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- =============================================
 -- SEARCH AND ANALYTICS
--- =============================================
 
 -- Create search_analytics table
 CREATE TABLE IF NOT EXISTS search_analytics (
@@ -180,9 +174,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- =============================================
 -- INDEXES FOR PERFORMANCE
--- =============================================
 
 -- Books indexes
 CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -228,9 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events(c
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id);
 
--- =============================================
 -- FUNCTIONS AND TRIGGERS
--- =============================================
 
 -- Function to handle updated_at timestamps
 CREATE OR REPLACE FUNCTION handle_updated_at()
@@ -324,9 +314,7 @@ CREATE TRIGGER ensure_single_primary_contact_trigger
   BEFORE INSERT OR UPDATE ON admin_contact_info
   FOR EACH ROW
   EXECUTE FUNCTION ensure_single_primary_contact();--
- =============================================
 -- SEARCH FUNCTIONS
--- =============================================
 
 -- Function to update book search vector
 CREATE OR REPLACE FUNCTION update_book_search_vector()
@@ -645,9 +633,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- =============================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- =============================================
 
 -- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -887,9 +873,7 @@ CREATE POLICY "Admins can read all sessions" ON user_sessions
 CREATE POLICY "System can manage sessions" ON user_sessions
   FOR ALL WITH CHECK (true);
 
--- =============================================
 -- GRANT PERMISSIONS
--- =============================================
 
 -- Grant function execution permissions
 GRANT EXECUTE ON FUNCTION search_books TO authenticated, anon;
@@ -920,9 +904,8 @@ UPDATE bundles SET search_vector =
   setweight(to_tsvector('english', COALESCE(description, '')), 'B')
 WHERE search_vector IS NULL;
 
--- =============================================
 -- STORAGE BUCKET SETUP
--- =============================================
+-- 
 
 -- Note: Storage bucket creation should be done through Supabase dashboard or CLI
 -- This is included here for reference but may need to be run separately

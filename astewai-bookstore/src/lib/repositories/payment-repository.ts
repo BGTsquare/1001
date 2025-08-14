@@ -6,12 +6,20 @@ export interface CreatePurchaseData {
   item_type: 'book' | 'bundle'
   item_id: string
   amount: number
+  status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected' | 'pending' | 'approved'
+  transaction_reference?: string
   payment_provider_id?: string
+  initiation_token?: string
+  telegram_chat_id?: number
+  telegram_user_id?: number
 }
 
 export interface UpdatePurchaseData {
-  status?: 'pending' | 'approved' | 'rejected' | 'completed'
+  status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected' | 'pending' | 'approved'
+  transaction_reference?: string
   payment_provider_id?: string
+  telegram_chat_id?: number
+  telegram_user_id?: number
 }
 
 // Generic result type for consistent error handling
@@ -46,12 +54,9 @@ export class PaymentRepository {
     if (this.isClient) {
       return this.supabase
     } else {
-      // Lazy initialization for server client to avoid import issues
-      if (!this.supabase) {
-        const { createClient } = await import('@/lib/supabase/server')
-        this.supabase = await createClient()
-      }
-      return this.supabase
+      // Always create a fresh server client to avoid stale connections
+      const { createClient } = await import('@/lib/supabase/server')
+      return await createClient()
     }
   }
 
@@ -70,7 +75,11 @@ export class PaymentRepository {
           item_id: data.item_id,
           amount: data.amount,
           payment_provider_id: data.payment_provider_id,
-          status: 'pending'
+          transaction_reference: data.transaction_reference,
+          initiation_token: data.initiation_token,
+          telegram_chat_id: data.telegram_chat_id,
+          telegram_user_id: data.telegram_user_id,
+          status: data.status || 'pending'
         })
         .select()
         .single()
@@ -169,6 +178,45 @@ export class PaymentRepository {
   }
 
   /**
+   * Update purchase with optimistic locking to prevent race conditions
+   */
+  async updatePurchaseWithVersionCheck(
+    id: string, 
+    data: UpdatePurchaseData, 
+    expectedUpdatedAt: string
+  ): Promise<RepositoryResult<Purchase>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const updateData: any = {
+        ...data,
+        updated_at: new Date().toISOString()
+      }
+
+      const { data: purchase, error } = await supabase
+        .from('purchases')
+        .update(updateData)
+        .eq('id', id)
+        .eq('updated_at', expectedUpdatedAt) // Optimistic locking
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { success: false, error: 'Purchase was modified by another process. Please refresh and try again.' }
+        }
+        console.error('Error updating purchase with version check:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: purchase }
+    } catch (error) {
+      console.error('Error in updatePurchaseWithVersionCheck:', error)
+      return { success: false, error: 'Failed to update purchase' }
+    }
+  }
+
+  /**
    * Check if user has existing purchase for item
    */
   async hasExistingPurchase(userId: string, itemType: 'book' | 'bundle', itemId: string): Promise<RepositoryResult<Purchase | null>> {
@@ -181,7 +229,7 @@ export class PaymentRepository {
         .eq('user_id', userId)
         .eq('item_type', itemType)
         .eq('item_id', itemId)
-        .in('status', ['pending', 'approved', 'completed'])
+        .in('status', ['pending', 'pending_initiation', 'awaiting_payment', 'pending_verification', 'completed'])
         .single()
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
@@ -218,6 +266,95 @@ export class PaymentRepository {
     } catch (error) {
       console.error('Error in getPurchaseByProviderId:', error)
       return { success: false, error: 'Failed to fetch purchase by provider ID' }
+    }
+  }
+
+  /**
+   * Get purchase by transaction reference (for manual payment tracking)
+   */
+  async getPurchaseByTransactionReference(transactionReference: string): Promise<RepositoryResult<Purchase>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: purchase, error } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('transaction_reference', transactionReference)
+        .single()
+
+      if (error) {
+        console.error('Error fetching purchase by transaction reference:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: purchase }
+    } catch (error) {
+      console.error('Error in getPurchaseByTransactionReference:', error)
+      return { success: false, error: 'Failed to fetch purchase by transaction reference' }
+    }
+  }
+
+  /**
+   * Find purchase by initiation token (for Telegram bot)
+   */
+  async findPurchaseByToken(token: string): Promise<RepositoryResult<Purchase>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: purchase, error } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('initiation_token', token)
+        .single()
+
+      if (error) {
+        console.error('Error fetching purchase by token:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: purchase }
+    } catch (error) {
+      console.error('Error in findPurchaseByToken:', error)
+      return { success: false, error: 'Failed to fetch purchase by token' }
+    }
+  }
+
+  /**
+   * Get user by ID (for Telegram bot responses)
+   */
+  async getUserById(userId: string): Promise<RepositoryResult<{ email: string, display_name?: string }>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      // Get user from auth.users and profile
+      const { data: user, error: userError } = await supabase.auth.admin.getUserById(userId)
+      
+      if (userError) {
+        console.error('Error fetching user:', userError)
+        return { success: false, error: userError.message }
+      }
+
+      // Get profile for display name
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', userId)
+        .single()
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError)
+      }
+
+      return { 
+        success: true, 
+        data: { 
+          email: user.user?.email || 'Unknown',
+          display_name: profile?.display_name 
+        } 
+      }
+    } catch (error) {
+      console.error('Error in getUserById:', error)
+      return { success: false, error: 'Failed to fetch user' }
     }
   }
 
@@ -265,24 +402,48 @@ export class PaymentRepository {
   }
 
   /**
-   * Get purchases by status
+   * Get purchases by status with pagination
    */
-  async getPurchasesByStatus(status: 'pending' | 'approved' | 'rejected' | 'completed'): Promise<RepositoryResult<Purchase[]>> {
+  async getPurchasesByStatus(
+    status: 'pending' | 'approved' | 'rejected' | 'completed',
+    page: number = 1,
+    limit: number = 20
+  ): Promise<PaginatedResult<Purchase>> {
     try {
       const supabase = await this.getSupabaseClient()
-      
+      const offset = (page - 1) * limit
+
+      // Get total count
+      const { count, error: countError } = await supabase
+        .from('purchases')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', status)
+
+      if (countError) {
+        console.error('Error counting purchases by status:', countError)
+        return { success: false, error: countError.message }
+      }
+
+      // Get purchases with pagination
       const { data: purchases, error } = await supabase
         .from('purchases')
         .select('*')
         .eq('status', status)
         .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
 
       if (error) {
         console.error('Error fetching purchases by status:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchases || [] }
+      return { 
+        success: true, 
+        data: purchases || [], 
+        total: count || 0,
+        page,
+        limit
+      }
     } catch (error) {
       console.error('Error in getPurchasesByStatus:', error)
       return { success: false, error: 'Failed to fetch purchases by status' }

@@ -2,8 +2,6 @@
 
 import React from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
-import { Button } from './button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -12,8 +10,7 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
-  fallback?: React.ComponentType<{ error: Error; retry: () => void }>
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -27,53 +24,39 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-    this.props.onError?.(error, errorInfo)
+    console.error('Error caught by boundary:', error, errorInfo)
   }
 
-  retry = () => {
+  resetError = () => {
     this.setState({ hasError: false, error: undefined })
   }
 
   render() {
     if (this.state.hasError) {
-      const FallbackComponent = this.props.fallback
-
-      if (FallbackComponent && this.state.error) {
-        return <FallbackComponent error={this.state.error} retry={this.retry} />
-      }
-
-      return <DefaultErrorFallback error={this.state.error} retry={this.retry} />
+      const FallbackComponent = this.props.fallback || DefaultErrorFallback
+      return <FallbackComponent error={this.state.error} resetError={this.resetError} />
     }
 
     return this.props.children
   }
 }
 
-interface ErrorFallbackProps {
-  error?: Error
-  retry: () => void
-}
-
-function DefaultErrorFallback({ error, retry }: ErrorFallbackProps) {
+function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError: () => void }) {
   return (
-    <Card className="mx-auto max-w-md">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-          <AlertTriangle className="h-6 w-6 text-destructive" />
-        </div>
-        <CardTitle>Something went wrong</CardTitle>
-        <CardDescription>
-          {error?.message || 'An unexpected error occurred'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-center">
-        <Button onClick={retry} variant="outline" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Try again
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center p-8 text-center">
+      <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
+      <p className="text-gray-600 mb-4">
+        {error?.message || 'An unexpected error occurred'}
+      </p>
+      <button
+        onClick={resetError}
+        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        <RefreshCw className="w-4 h-4" />
+        <span>Try again</span>
+      </button>
+    </div>
   )
 }
 

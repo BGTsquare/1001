@@ -54,6 +54,7 @@ export function BookReader({
   const contentRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [content, setContent] = useState<string>('')
+  const [contentFormat, setContentFormat] = useState<string>('text')
   const [currentProgress, setCurrentProgress] = useState(libraryItem.progress || 0)
   const [showSettings, setShowSettings] = useState(false)
   const [showBookmarks, setShowBookmarks] = useState(false)
@@ -86,9 +87,10 @@ export function BookReader({
 
         const data = await response.json()
         setContent(data.content || '')
+        setContentFormat(data.contentFormat || 'text')
         
-        // Restore reading position if available
-        if (libraryItem.last_read_position) {
+        // Restore reading position if available (only for text content)
+        if (libraryItem.last_read_position && data.contentFormat === 'text') {
           setTimeout(() => {
             restoreReadingPosition(libraryItem.last_read_position!)
           }, 100)
@@ -104,8 +106,10 @@ export function BookReader({
     loadContent()
   }, [book.id, book.content_url, libraryItem.last_read_position])
 
-  // Auto-save reading progress
+  // Auto-save reading progress (only for text content)
   useEffect(() => {
+    if (contentFormat !== 'text') return
+
     const saveProgress = async () => {
       if (!contentRef.current || currentProgress === libraryItem.progress) return
 
@@ -144,7 +148,7 @@ export function BookReader({
 
     const debounceTimer = setTimeout(saveProgress, 2000)
     return () => clearTimeout(debounceTimer)
-  }, [currentProgress, book.id, libraryItem.progress, onProgressUpdate, onStatusUpdate])
+  }, [currentProgress, book.id, libraryItem.progress, onProgressUpdate, onStatusUpdate, contentFormat])
 
   // Calculate reading progress based on scroll position
   const calculateProgress = useCallback(() => {
@@ -160,8 +164,10 @@ export function BookReader({
     setCurrentProgress(Math.round(progress))
   }, [])
 
-  // Handle scroll events for progress tracking
+  // Handle scroll events for progress tracking (only for text content)
   useEffect(() => {
+    if (contentFormat !== 'text') return
+    
     const element = contentRef.current
     if (!element) return
 
@@ -171,7 +177,7 @@ export function BookReader({
 
     element.addEventListener('scroll', handleScroll, { passive: true })
     return () => element.removeEventListener('scroll', handleScroll)
-  }, [calculateProgress])
+  }, [calculateProgress, contentFormat])
 
   // Get current reading position for persistence
   const getCurrentReadingPosition = (): string => {
@@ -221,9 +227,12 @@ export function BookReader({
     }
   }
 
-  // Add bookmark
+  // Add bookmark (only for text content)
   const addBookmark = async () => {
-    if (!contentRef.current) return
+    if (!contentRef.current || contentFormat !== 'text') {
+      toast.error('Bookmarks are only available for text content')
+      return
+    }
 
     const position = getCurrentReadingPosition()
     const selection = window.getSelection()
@@ -322,44 +331,52 @@ export function BookReader({
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Progress indicator */}
-            <div className="hidden sm:flex items-center gap-2 min-w-[120px]">
-              <Progress value={currentProgress} className="w-20" />
-              <span className="text-mobile-xs text-muted-foreground">
-                {Math.round(currentProgress)}%
-              </span>
-            </div>
+            {/* Progress indicator (only for text content) */}
+            {contentFormat === 'text' && (
+              <div className="hidden sm:flex items-center gap-2 min-w-[120px]">
+                <Progress value={currentProgress} className="w-20" />
+                <span className="text-mobile-xs text-muted-foreground">
+                  {Math.round(currentProgress)}%
+                </span>
+              </div>
+            )}
 
             {/* Reader controls */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={addBookmark}
-              title="Add bookmark"
-              className="touch-target"
-            >
-              <BookmarkPlus className="h-4 w-4" />
-            </Button>
+            {contentFormat === 'text' && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={addBookmark}
+                  title="Add bookmark"
+                  className="touch-target"
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowBookmarks(!showBookmarks)}
-              title="View bookmarks"
-              className="touch-target"
-            >
-              <Bookmark className="h-4 w-4" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowBookmarks(!showBookmarks)}
+                  title="View bookmarks"
+                  className="touch-target"
+                >
+                  <Bookmark className="h-4 w-4" />
+                </Button>
+              </>
+            )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-              title="Reader settings"
-              className="touch-target"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            {contentFormat === 'text' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(!showSettings)}
+                title="Reader settings"
+                className="touch-target"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
 
             <Button
               variant="ghost"
@@ -381,12 +398,14 @@ export function BookReader({
               <p className="text-mobile-xs text-muted-foreground truncate">by {book.author}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Progress value={currentProgress} className="flex-1" />
-            <span className="text-mobile-xs text-muted-foreground min-w-[40px]">
-              {Math.round(currentProgress)}%
-            </span>
-          </div>
+          {contentFormat === 'text' && (
+            <div className="flex items-center gap-2">
+              <Progress value={currentProgress} className="flex-1" />
+              <span className="text-mobile-xs text-muted-foreground min-w-[40px]">
+                {Math.round(currentProgress)}%
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -535,10 +554,21 @@ export function BookReader({
             style={{ scrollBehavior: 'smooth' }}
           >
             {content ? (
-              <div 
-                className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-mobile-lg sm:prose-headings:text-xl prose-p:text-mobile-base sm:prose-p:text-base prose-p:leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
+              <div className="px-4 py-6">
+                {contentFormat === 'pdf' || contentFormat === 'epub' ? (
+                  // For PDF/EPUB files, show download notice
+                  <div 
+                    className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-mobile-lg sm:prose-headings:text-xl prose-p:text-mobile-base sm:prose-p:text-base prose-p:leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                ) : (
+                  // For text content, apply reading styles
+                  <div 
+                    className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-mobile-lg sm:prose-headings:text-xl prose-p:text-mobile-base sm:prose-p:text-base prose-p:leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                )}
+              </div>
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-mobile-base">No content available for this book.</p>

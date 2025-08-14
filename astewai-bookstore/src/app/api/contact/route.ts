@@ -3,24 +3,28 @@ import { ContactService } from '@/lib/services/contact-service';
 import { adminContactInfoSchema } from '@/lib/validation/contact-validation';
 import { createClient } from '@/lib/supabase/server';
 
-const contactService = new ContactService();
-
 export async function GET(request: NextRequest) {
   try {
+    const contactService = new ContactService();
     const url = new URL(request.url);
     const primary = url.searchParams.get('primary') === 'true';
     const adminId = url.searchParams.get('adminId');
 
-    let contacts;
-    if (adminId) {
-      contacts = await contactService.getAdminContactInfo(adminId);
-    } else if (primary) {
-      contacts = await contactService.getPrimaryAdminContacts();
+    let result;
+    if (primary) {
+      result = await contactService.getPrimaryAdminContacts();
     } else {
-      contacts = await contactService.getActiveAdminContacts();
+      result = await contactService.getActiveAdminContacts();
     }
 
-    return NextResponse.json({ data: contacts });
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to fetch contacts' },
+        { status: result.status || 500 }
+      );
+    }
+
+    return NextResponse.json({ data: result.data });
   } catch (error) {
     console.error('Error fetching admin contacts:', error);
     return NextResponse.json(
@@ -32,7 +36,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const contactService = new ContactService();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

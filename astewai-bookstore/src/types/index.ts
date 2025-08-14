@@ -14,6 +14,7 @@ export type BlogPost = Database['public']['Tables']['blog_posts']['Row']
 export type Purchase = Database['public']['Tables']['purchases']['Row']
 export type Review = Database['public']['Tables']['reviews']['Row']
 export type AdminContactInfo = Database['public']['Tables']['admin_contact_info']['Row']
+export type PaymentConfig = Database['public']['Tables']['payment_config']['Row']
 export type PurchaseRequest = Database['public']['Tables']['purchase_requests']['Row'] & {
   book?: Book
   bundle?: Bundle
@@ -51,6 +52,15 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Service result types for consistent error handling
+export interface ServiceResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: string;
+  status?: number;
 }
 
 // Search and filter types

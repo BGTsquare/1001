@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user is authenticated and is admin
     const { data: { user }, error: authError } = await supabase.auth.getUser()

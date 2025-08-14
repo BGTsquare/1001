@@ -16,7 +16,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Search, BookOpen, AlertCircle } from 'lucide-react'
+import { formatETB, parseETB } from '@/lib/utils/currency'
 import type { Book } from '@/types'
 
 interface BundleCreateDialogProps {
@@ -219,17 +221,13 @@ export function BundleCreateDialog({ open, onOpenChange, onSuccess }: BundleCrea
 
                         <div className="space-y-2">
                             <label htmlFor="price" className="text-sm font-medium">
-                                Bundle Price *
+                                Bundle Price (ETB) *
                             </label>
-                            <Input
+                            <CurrencyInput
                                 id="price"
-                                type="number"
-                                step="0.01"
-                                min="0"
                                 value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                                placeholder="0.00"
-                                className={errors.price ? 'border-red-500' : ''}
+                                onChange={setPrice}
+                                error={!!errors.price}
                             />
                             {errors.price && (
                                 <p className="text-sm text-red-600">{errors.price}</p>
@@ -257,16 +255,16 @@ export function BundleCreateDialog({ open, onOpenChange, onSuccess }: BundleCrea
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                     <div>
                                         <div className="font-medium">Total Book Price</div>
-                                        <div className="text-lg">${calculateTotalBookPrice().toFixed(2)}</div>
+                                        <div className="text-lg">{Math.round(calculateTotalBookPrice())} ETB</div>
                                     </div>
                                     <div>
                                         <div className="font-medium">Bundle Price</div>
-                                        <div className="text-lg">${(parseFloat(price) || 0).toFixed(2)}</div>
+                                        <div className="text-lg">{Math.round(parseFloat(price) || 0)} ETB</div>
                                     </div>
                                     <div>
                                         <div className="font-medium">Customer Savings</div>
                                         <div className="text-lg text-green-600">
-                                            ${calculateSavings().toFixed(2)} ({calculateDiscountPercentage().toFixed(1)}% off)
+                                            {Math.round(calculateSavings())} ETB ({calculateDiscountPercentage().toFixed(1)}% off)
                                         </div>
                                     </div>
                                 </div>
@@ -313,7 +311,7 @@ export function BundleCreateDialog({ open, onOpenChange, onSuccess }: BundleCrea
                                                 <div className="text-sm text-muted-foreground">by {book.author}</div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className="text-sm font-medium">${book.price.toFixed(2)}</span>
+                                                <span className="text-sm font-medium">{Math.round(book.price)} ETB</span>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -353,7 +351,7 @@ export function BundleCreateDialog({ open, onOpenChange, onSuccess }: BundleCrea
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <span className="text-sm font-medium">${book.price.toFixed(2)}</span>
+                                                    <span className="text-sm font-medium">{Math.round(book.price)} ETB</span>
                                                     <BookOpen className="w-4 h-4 text-muted-foreground" />
                                                 </div>
                                             </div>

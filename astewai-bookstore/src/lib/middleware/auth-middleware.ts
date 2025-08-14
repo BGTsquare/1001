@@ -1,87 +1,46 @@
+/**
+ * Authentication and Authorization Middleware
+ * Provides reusable auth checks for API routes
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { User } from '@supabase/supabase-js'
 
-export interface AuthenticatedRequest extends NextRequest {
-  user: User
-  profile: {
-    id: string
-    role: string
-    display_name?: string
-    avatar_url?: string
-  }
-}
-
-export interface AuthMiddlewareOptions {
-  requireProfile?: boolean
-  allowedRoles?: string[]
+export interface AuthResult {
+  success: boolean
+  user?: any
+  profile?: any
+  error?: string
+  response?: NextResponse
 }
 
 /**
- * Enhanced authentication middleware with better error handling and performance
+ * Check if user is authenticated
  */
-export async function withAuth(
-  handler: (request: AuthenticatedRequest) => Promise<NextResponse>,
-  options: AuthMiddlewareOptions = { requireProfile: true }
-) {
-  return async (request: NextRequest) => {
-    try {
-      const supabase = await createClient()
-      
-      // Get user with better error handling
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (authError) {
-        console.error('Auth error:', authError.message)
-        return NextResponse.json(
-          { error: 'Authentication failed', details: authError.message }, 
+export async function requireAuth(): Promise<AuthResult> {
+  try {
+    const supabase = await createClient()
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Authentication required',
+        response: NextResponse.json(
+          { error: 'Authentication required' },
           { status: 401 }
         )
       }
-      
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
+    }
 
-      let profile = null
-      
-      // Only fetch profile if required (performance optimization)
-      if (options.requireProfile) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, role, display_name, avatar_url')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Profile fetch error:', profileError.message)
-          return NextResponse.json(
-            { error: 'Profile not found', details: profileError.message }, 
-            { status: 404 }
-          )
-        }
-
-        profile = profileData
-        
-        // Check role-based access if specified
-        if (options.allowedRoles && !options.allowedRoles.includes(profile.role)) {
-          return NextResponse.json(
-            { error: `Forbidden - Required roles: ${options.allowedRoles.join(', ')}` }, 
-            { status: 403 }
-          )
-        }
-      }
-
-      // Extend request object with auth data
-      const authenticatedRequest = Object.assign(request, {
-        user,
-        profile
-      }) as AuthenticatedRequest
-
-      return handler(authenticatedRequest)
-    } catch (error) {
-      console.error('Authentication middleware error:', error)
-      return NextResponse.json(
+    return { success: true, user }
+  } catch (error) {
+    console.error('Error in requireAuth:', error)
+    return {
+      success: false,
+      error: 'Authentication check failed',
+      response: NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
       )
@@ -90,29 +49,90 @@ export async function withAuth(
 }
 
 /**
- * Admin-only authentication middleware
+ * Check if user is authenticated and has admin role
  */
-export async function withAdminAuth(
-  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
-) {
-  return withAuth(handler, { requireProfile: true, allowedRoles: ['admin'] })
+export async function requireAdmin(): Promise<AuthResult> {
+  try {
+    const authResult = await requireAuth()
+    
+    if (!authResult.success) {
+      return authResult
+    }
+
+    const supabase = await createClient()
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authResult.user.id)
+      .single()
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError)
+      return {
+        success: false,
+        error: 'Failed to verify user permissions',
+        response: NextResponse.json(
+          { error: 'Internal server error' },
+          { status: 500 }
+        )
+      }
+    }
+
+    if (!profile || profile.role !== 'admin') {
+      return {
+        success: false,
+        error: 'Admin access required',
+        response: NextResponse.json(
+          { error: 'Admin access required' },
+          { status: 403 }
+        )
+      }
+    }
+
+    return { 
+      success: true, 
+      user: authResult.user, 
+      profile 
+    }
+  } catch (error) {
+    console.error('Error in requireAdmin:', error)
+    return {
+      success: false,
+      error: 'Authorization check failed',
+      response: NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
+  }
 }
 
 /**
- * User authentication middleware (no profile required for better performance)
+ * Higher-order function to wrap API handlers with auth checks
  */
-export async function withUserAuth(
-  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
-) {
-  return withAuth(handler, { requireProfile: false })
+export function withAuth(handler: (request: NextRequest, context: any, authResult: AuthResult) => Promise<NextResponse>) {
+  return async (request: NextRequest, context: any) => {
+    const authResult = await requireAuth()
+    
+    if (!authResult.success) {
+      return authResult.response!
+    }
+
+    return handler(request, context, authResult)
+  }
 }
 
 /**
- * Role-based authentication middleware
+ * Higher-order function to wrap API handlers with admin auth checks
  */
-export function withRoleAuth(
-  roles: string[],
-  handler: (request: AuthenticatedRequest) => Promise<NextResponse>
-) {
-  return withAuth(handler, { requireProfile: true, allowedRoles: roles })
+export function withAdminAuth(handler: (request: NextRequest, context: any, authResult: AuthResult) => Promise<NextResponse>) {
+  return async (request: NextRequest, context: any) => {
+    const authResult = await requireAdmin()
+    
+    if (!authResult.success) {
+      return authResult.response!
+    }
+
+    return handler(request, context, authResult)
+  }
 }
