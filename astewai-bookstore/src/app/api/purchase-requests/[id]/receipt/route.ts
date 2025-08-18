@@ -5,7 +5,6 @@ import { generateReceiptPDF } from '@/lib/utils/receipt-generator';
 
 const contactService = new ContactService();
 
-export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -38,6 +37,7 @@ export async function POST(
         { status: 400 }
       );
     }
+export async function POST(
 
     // Get user profile for receipt
     const { data: profile } = await supabase
