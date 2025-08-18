@@ -22,6 +22,11 @@ export function error<E = string>(error: E): Result<never, E> {
 }
 
 /**
+ * Alias for error function for backward compatibility
+ */
+export const failure = error
+
+/**
  * Type guard to check if result is successful
  */
 export function isSuccess<T, E>(result: Result<T, E>): result is { success: true; data: T } {
