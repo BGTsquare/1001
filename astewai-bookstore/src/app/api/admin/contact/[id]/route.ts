@@ -6,11 +6,10 @@ const contactService = new ContactService();
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { id } = context.params;
   try {
-    
-    const { id } = await params
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -43,11 +42,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { id } = context.params;
   try {
-    
-    const { id } = await params
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

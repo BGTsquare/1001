@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { PURCHASE_STATUS } from '@/lib/constants/purchase-status'
 import type { Result } from '@/lib/types/result'
-import { success, failure } from '@/lib/types/result'
+import { success, error } from '@/lib/types/result'
 import type { TelegramPurchaseData, BasePurchaseData } from '@/lib/services/purchase-service'
 
 export interface PurchaseEntity {
@@ -32,12 +32,12 @@ export class PurchaseRepository {
         .single()
 
       if (error) {
-        return failure(`Failed to create purchase: ${error.message}`)
+        return error(`Failed to create purchase: ${error.message}`)
       }
 
       return success(data)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -54,12 +54,12 @@ export class PurchaseRepository {
         if (error.code === 'PGRST116') { // No rows returned
           return success(null)
         }
-        return failure(`Failed to find purchase: ${error.message}`)
+        return error(`Failed to find purchase: ${error.message}`)
       }
 
       return success(data)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -78,12 +78,12 @@ export class PurchaseRepository {
         if (error.code === 'PGRST116') { // No rows returned
           return success(null)
         }
-        return failure(`Failed to find pending purchase: ${error.message}`)
+        return error(`Failed to find pending purchase: ${error.message}`)
       }
 
       return success(data)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -104,12 +104,12 @@ export class PurchaseRepository {
         if (error.code === 'PGRST116') { // No rows returned
           return success(null)
         }
-        return failure(`Failed to find purchase: ${error.message}`)
+        return error(`Failed to find purchase: ${error.message}`)
       }
 
       return success(data)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -124,12 +124,12 @@ export class PurchaseRepository {
         .eq('id', purchaseId)
 
       if (error) {
-        return failure(`Failed to update purchase status: ${error.message}`)
+        return error(`Failed to update purchase status: ${error.message}`)
       }
 
       return success(undefined)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -150,12 +150,14 @@ export class PurchaseRepository {
         .eq('id', purchaseId)
 
       if (error) {
-        return failure(`Failed to update purchase with Telegram info: ${error.message}`)
+        return error(`Failed to update purchase with Telegram info: ${error.message}`)
       }
 
       return success(undefined)
-    } catch (error) {
-      return failure(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (err) {
+      return error(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 }
+
+export const purchaseRepository = new PurchaseRepository()

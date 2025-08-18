@@ -382,6 +382,3 @@ export class PaymentConfigService {
 
 // Export singleton instance for consistent usage
 export const paymentConfigService = new PaymentConfigService()
-
-// Also export class for testing
-export { PaymentConfigService }

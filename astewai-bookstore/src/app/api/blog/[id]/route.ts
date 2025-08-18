@@ -14,8 +14,9 @@ const updateBlogPostSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { params } = context;
   try {
     const supabase = await createClient();
     const { id } = params;
@@ -52,8 +53,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { params } = context;
   try {
     const supabase = await createClient();
     const { id } = params;
@@ -125,8 +127,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { params } = context;
   try {
     const supabase = await createClient();
     const { id } = params;

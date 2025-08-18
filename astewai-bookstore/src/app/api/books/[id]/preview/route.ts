@@ -6,11 +6,11 @@ const CACHE_DURATION = 60 * 60 // 1 hour in seconds
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
+  const { id } = context.params;
   try {
-    
-    const { id } = await params// Validate UUID format early to avoid unnecessary DB calls
+    // Validate UUID format early to avoid unnecessary DB calls
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(id)) {
       return NextResponse.json(
