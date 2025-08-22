@@ -3,6 +3,8 @@ import { ContactService } from '@/lib/services/contact-service';
 import { adminContactInfoSchema } from '@/lib/validation/contact-validation';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 const contactService = new ContactService();
 
 export async function GET() {

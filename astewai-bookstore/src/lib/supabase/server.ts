@@ -1,30 +1,43 @@
-import { createServerClient } from '@supabase/ssr'
+import { type CookieOptions, createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database'
 
-export async function createClient() {
-  const cookieStore = await cookies()
-
+export function createClient() {
+  // Defensive: Only call cookies() if inside a request context
+  let cookiesApi: any = undefined;
+  try {
+    cookiesApi = cookies();
+  } catch (error) {
+    // Not in a request context, return undefined or no-op
+    cookiesApi = {
+      get: () => undefined,
+      set: () => {},
+      remove: () => {},
+    };
+  }
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
+        get(name: string) {
+          return cookiesApi.get ? cookiesApi.get(name)?.value : undefined;
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+        set(name: string, value: string, options: CookieOptions) {
+          if (cookiesApi.set) {
+            try {
+              cookiesApi.set(name, value, options);
+            } catch (error) {}
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          if (cookiesApi.set) {
+            try {
+              cookiesApi.set(name, '', options);
+            } catch (error) {}
           }
         },
       },
     }
-  )
+  );
 }

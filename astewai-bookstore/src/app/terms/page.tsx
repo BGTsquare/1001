@@ -1,4 +1,6 @@
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// ...existing code...
 import { Badge } from '@/components/ui/badge';
 import { generateMetadata } from '@/lib/seo/metadata';
 import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
@@ -97,13 +99,7 @@ function ContactInformation({ contactInfo }: ContactInformationProps) {
   );
 }
 
-export const metadata = generateMetadata({
-  title: 'Terms of Service - Astewai Digital Bookstore',
-  description: 'Read our Terms of Service to understand your rights and responsibilities when using Astewai Digital Bookstore platform.',
-  url: '/terms',
-  type: 'website',
-  tags: ['terms', 'legal', 'service agreement', 'user rights', 'platform rules'],
-});
+// Remove metadata export from client component. Metadata is now in metadata.ts
 
 // Constants for better maintainability
 const TERMS_VERSION = '1.0';

@@ -1,43 +1,47 @@
-import { MetadataRoute } from 'next';
-import { 
-  generateStaticSitemap, 
-  generateBooksSitemap, 
-  generateBundlesSitemap, 
-  generateBlogSitemap 
-} from '@/lib/seo/sitemap';
-import { bookService } from '@/lib/services/book-service';
-import { getBundles } from '@/lib/repositories/bundleRepository';
+import { MetadataRoute } from 'next'
+import {
+  generateStaticSitemap,
+  generateBooksSitemap,
+  generateBundlesSitemap,
+  generateBlogSitemap,
+} from '@/lib/seo/sitemap'
+import { createBuildClient } from '@/lib/supabase/build'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const supabase = createBuildClient()
+
   // Get static pages
-  const staticPages = generateStaticSitemap();
+  const staticPages = generateStaticSitemap()
 
   // Get dynamic pages
   const [bookPages, bundlePages, blogPages] = await Promise.all([
     generateBooksSitemap(async () => {
-      const result = await bookService.getBooks({ page: 1, limit: 1000 });
-      return result.success ? result.data.books.map(book => ({
-        id: book.id,
-        updated_at: book.updated_at,
-      })) : [];
+      const { data: books, error } = await supabase
+        .from('books')
+        .select('id, updated_at')
+        .limit(1000)
+      if (error) {
+        console.error('Error generating books sitemap:', error)
+        return []
+      }
+      return books
     }),
     generateBundlesSitemap(async () => {
-      const bundles = await getBundles();
-      return bundles.map(bundle => ({
-        id: bundle.id,
-        updated_at: bundle.updated_at,
-      }));
+      const { data: bundles, error } = await supabase
+        .from('bundles')
+        .select('id, updated_at')
+        .limit(1000)
+      if (error) {
+        console.error('Error generating bundles sitemap:', error)
+        return []
+      }
+      return bundles
     }),
     generateBlogSitemap(async () => {
       // TODO: Implement blog posts fetching when blog service is available
-      return [];
+      return []
     }),
-  ]);
+  ])
 
-  return [
-    ...staticPages,
-    ...bookPages,
-    ...bundlePages,
-    ...blogPages,
-  ];
+  return [...staticPages, ...bookPages, ...bundlePages, ...blogPages]
 }

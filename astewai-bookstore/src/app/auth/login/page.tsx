@@ -4,6 +4,8 @@ interface LoginPageProps {
   searchParams: Promise<{ redirectTo?: string; message?: string }>
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   

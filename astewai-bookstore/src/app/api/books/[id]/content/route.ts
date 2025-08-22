@@ -9,7 +9,8 @@ export async function GET(
 ) {
   try {
     
-    const { id } = await paramsconst supabase = await createClient()
+    const { id } = params;
+    const supabase = await createClient();
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

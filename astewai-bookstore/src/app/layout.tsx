@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/layout/header';
@@ -134,25 +135,27 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <PurchaseRequestProvider>
-              <AnalyticsProvider>
-                <SkipNavigation />
-                <div className="layout-mobile">
-                  <Header />
-                  <main id="main-content" className="content-mobile" tabIndex={-1}>
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
-                <PWAInstallPrompt />
-                <Toaster />
-                {/* Live region for screen reader announcements */}
-                <div
-                  id="live-region"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  className="sr-only"
-                />
-              </AnalyticsProvider>
+              <Suspense fallback={<div>Loading...</div>}>
+                <AnalyticsProvider>
+                  <SkipNavigation />
+                  <div className="layout-mobile">
+                    <Header />
+                    <main id="main-content" className="content-mobile" tabIndex={-1}>
+                      {children}
+                    </main>
+                    <Footer />
+                  </div>
+                  <PWAInstallPrompt />
+                  <Toaster />
+                  {/* Live region for screen reader announcements */}
+                  <div
+                    id="live-region"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="sr-only"
+                  />
+                </AnalyticsProvider>
+              </Suspense>
             </PurchaseRequestProvider>
           </AuthProvider>
         </QueryProvider>

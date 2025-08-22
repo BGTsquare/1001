@@ -3,6 +3,8 @@ import { ContactService } from '@/lib/services/contact-service';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const contactService = new ContactService();
 
 const bulkActionSchema = z.object({

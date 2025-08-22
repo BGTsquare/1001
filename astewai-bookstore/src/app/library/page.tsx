@@ -7,6 +7,8 @@ import { clientLibraryService } from '@/lib/services/client-library-service'
 import type { UserLibrary } from '@/types'
 import type { LibrarySearchOptions } from '@/lib/types/library'
 
+export const dynamic = 'force-dynamic';
+
 type LibraryTab = 'all' | 'in-progress' | 'completed'
 type SortOption = 'added_at' | 'progress' | 'title' | 'updated_at'
 type SortOrder = 'asc' | 'desc'

@@ -3,6 +3,8 @@ import { ContactService } from '@/lib/services/contact-service';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const contactService = new ContactService();
 
 const cancelRequestSchema = z.object({
@@ -15,7 +17,8 @@ export async function POST(
 ) {
   try {
     
-    const { id } = await paramsconst supabase = createClient();
+    const { id } = params;
+    const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

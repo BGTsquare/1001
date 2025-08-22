@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ContactService } from '@/lib/services/contact-service';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 const contactService = new ContactService();
 
 export async function PUT(
@@ -10,7 +12,8 @@ export async function PUT(
 ) {
   try {
     
-    const { id } = await paramsconst supabase = createClient();
+    const { id } = params;
+    const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -46,7 +49,8 @@ export async function DELETE(
 ) {
   try {
     
-    const { id } = await paramsconst supabase = createClient();
+    const { id } = params;
+    const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

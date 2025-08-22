@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic';
+
 export default function PromoteAdminPage() {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)

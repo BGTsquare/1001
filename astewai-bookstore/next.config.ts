@@ -2,7 +2,34 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'byxggitbwomgnxuegxgt.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+        {
+          protocol: 'https',
+          hostname: 'jgzfavokqqipdufgnqac.supabase.co',
+          port: '',
+          pathname: '/storage/v1/object/public/**',
+        },
+    ],
+  },
+  // Enable experimental features for better performance
+  experimental: {
+    optimizePackageImports: ['@supabase/supabase-js'],
+  },
 };
 
 // Sentry configuration

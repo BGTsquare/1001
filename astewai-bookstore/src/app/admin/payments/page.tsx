@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: 'Manage and approve payment requests',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminPaymentsPage() {
   return (
     <AdminLayout 

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 
 const queryClient = new QueryClient()
 
+export const dynamic = 'force-dynamic';
+
 export default function TestEnhancedBundlePage() {
   const [open, setOpen] = useState(false)
 

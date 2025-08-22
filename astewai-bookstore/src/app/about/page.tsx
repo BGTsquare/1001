@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Users, Award, Target, Heart, Lightbulb } from 'lucide-react';
@@ -7,7 +8,7 @@ import { StructuredData } from '@/components/seo/structured-data';
 
 export const metadata = generateMetadata({
   title: 'About Us - Astewai Digital Bookstore',
-  description: 'Learn about Astewai Digital Bookstore\'s mission to make quality digital books accessible to everyone. Discover our story, values, and commitment to readers.',
+  description: "Learn about Astewai Digital Bookstore's mission to make quality digital books accessible to everyone. Discover our story, values, and commitment to readers.",
   url: '/about',
   type: 'website',
   tags: ['about', 'company', 'mission', 'digital books', 'reading'],
@@ -15,16 +16,16 @@ export const metadata = generateMetadata({
 
 export default function AboutPage() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.com';
-
-  const breadcrumbStructuredData = generateBreadcrumbStructuredData([
+  const breadcrumbData = [
     { name: 'Home', url: baseUrl },
     { name: 'About', url: `${baseUrl}/about` },
-  ]);
+  ];
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData(breadcrumbData);
 
   return (
-    <>
-      <StructuredData data={breadcrumbStructuredData} id="about-breadcrumb" />
+    <Suspense fallback={<div>Loading...</div>}>
       <div className="container mx-auto px-4 py-8">
+        <StructuredData data={breadcrumbStructuredData} id="about-breadcrumb" />
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">About Astewai Digital Bookstore</h1>
@@ -52,52 +53,32 @@ export default function AboutPage() {
               </p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader>
               <div className="flex items-center space-x-2 mb-2">
                 <Lightbulb className="h-6 w-6 text-primary" />
-                <CardTitle className="text-2xl">Our Vision</CardTitle>
+                <CardTitle className="text-2xl">Our Story</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                To become the leading digital bookstore that connects readers with exceptional 
-                content while supporting authors and publishers in reaching their audience. 
-                We envision a world where digital reading is seamless, engaging, and enriching 
-                for everyone involved.
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                Astewai Digital Bookstore was born from a simple observation: while digital 
+                technology has transformed how we consume media, the book discovery and reading 
+                experience hadn't kept pace with modern expectations.
+              </p>
+              <p className="mb-6">
+                Founded in 2024, we set out to create a platform that combines the joy of 
+                book discovery with the convenience of digital reading. Our team of book 
+                lovers, technologists, and design enthusiasts came together with a shared 
+                vision of making reading more accessible and enjoyable.
+              </p>
+              <p>
+                Today, we're proud to serve thousands of readers worldwide, offering carefully 
+                curated collections, innovative bundle deals, and a seamless reading experience 
+                that puts the reader first.
               </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Our Story */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Our Story</h2>
-          <div className="max-w-4xl mx-auto">
-            <Card>
-              <CardContent className="p-8">
-                <div className="prose prose-lg max-w-none text-muted-foreground">
-                  <p className="mb-6">
-                    Astewai Digital Bookstore was born from a simple observation: while digital 
-                    technology has transformed how we consume media, the book discovery and reading 
-                    experience hadn't kept pace with modern expectations.
-                  </p>
-                  <p className="mb-6">
-                    Founded in 2024, we set out to create a platform that combines the joy of 
-                    book discovery with the convenience of digital reading. Our team of book 
-                    lovers, technologists, and design enthusiasts came together with a shared 
-                    vision of making reading more accessible and enjoyable.
-                  </p>
-                  <p>
-                    Today, we're proud to serve thousands of readers worldwide, offering carefully 
-                    curated collections, innovative bundle deals, and a seamless reading experience 
-                    that puts the reader first.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         {/* Core Values */}
@@ -118,37 +99,20 @@ export default function AboutPage() {
                 </p>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <div className="flex items-center space-x-2 mb-2">
                   <Users className="h-6 w-6 text-primary" />
-                  <CardTitle>Community Focused</CardTitle>
+                  <CardTitle>Community</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  We believe in building a community of readers and supporting both 
-                  emerging and established authors in their literary journey.
+                  We foster a vibrant community of readers and authors, encouraging engagement, 
+                  discussion, and shared discovery.
                 </p>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Heart className="h-6 w-6 text-primary" />
-                  <CardTitle>Accessibility</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  We're committed to making our platform accessible to all users and 
-                  offering affordable pricing options for quality content.
-                </p>
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader>
                 <div className="flex items-center space-x-2 mb-2">
@@ -158,38 +122,8 @@ export default function AboutPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  We continuously improve our platform with new features and technologies 
-                  to enhance the digital reading experience.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Target className="h-6 w-6 text-primary" />
-                  <CardTitle>Transparency</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  We believe in honest communication with our users about our practices, 
-                  policies, and the value we provide.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-2 mb-2">
-                  <Lightbulb className="h-6 w-6 text-primary" />
-                  <CardTitle>Sustainability</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Digital books reduce environmental impact, and we're committed to 
-                  sustainable business practices in all aspects of our operations.
+                  We embrace technology to continually improve the reading experience, 
+                  making it more accessible, enjoyable, and interactive.
                 </p>
               </CardContent>
             </Card>
@@ -211,7 +145,6 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start space-x-4">
                 <Badge variant="secondary" className="mt-1">02</Badge>
                 <div>
@@ -222,7 +155,6 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start space-x-4">
                 <Badge variant="secondary" className="mt-1">03</Badge>
                 <div>
@@ -234,7 +166,6 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
-
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
                 <Badge variant="secondary" className="mt-1">04</Badge>
@@ -246,7 +177,6 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start space-x-4">
                 <Badge variant="secondary" className="mt-1">05</Badge>
                 <div>
@@ -257,7 +187,6 @@ export default function AboutPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start space-x-4">
                 <Badge variant="secondary" className="mt-1">06</Badge>
                 <div>
@@ -299,6 +228,7 @@ export default function AboutPage() {
           </Card>
         </div>
       </div>
-    </>
+    </Suspense>
   );
 }
+// ...existing code...

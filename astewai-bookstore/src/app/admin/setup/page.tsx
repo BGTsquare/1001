@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { AlertCircle, CheckCircle, Loader2, Database } from 'lucide-react'
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminSetupPage() {
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [setupResult, setSetupResult] = useState<{

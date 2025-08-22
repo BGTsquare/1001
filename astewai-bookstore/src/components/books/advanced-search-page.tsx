@@ -164,135 +164,137 @@ export function AdvancedSearchPage() {
   const totalPages = Math.ceil(total / itemsPerPage)
 
   return (
-    <div className="space-y-6">
-      {/* Search Bar */}
-      <div className="max-w-4xl mx-auto">
-        <SearchBar
-          onSearch={handleSearch}
-          initialValue={searchQuery}
-          showSuggestions={true}
-          showPopularSearches={true}
-          placeholder="Search books, bundles, authors, or keywords..."
-          className="w-full"
-        />
-      </div>
-
-      {/* Search Type Tabs */}
-      <div className="flex justify-center">
-        <Tabs value={searchType} onValueChange={(value) => setSearchType(value as any)}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              All
-            </TabsTrigger>
-            <TabsTrigger value="books" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Books
-            </TabsTrigger>
-            <TabsTrigger value="bundles" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Bundles
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar with filters and popular searches */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Advanced Filters */}
-          <AdvancedSearchFilters
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-            categories={categories}
-            tags={tags}
-            showCompact={false}
+    <Suspense fallback={<div>Loading search...</div>}>
+      <div className="space-y-6">
+        {/* Search Bar */}
+        <div className="max-w-4xl mx-auto">
+          <SearchBar
+            onSearch={handleSearch}
+            initialValue={searchQuery}
+            showSuggestions={true}
+            showPopularSearches={true}
+            placeholder="Search books, bundles, authors, or keywords..."
+            className="w-full"
           />
-
-          {/* Popular Searches */}
-          {popularSearches.length > 0 && (
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="h-4 w-4" />
-                <h3 className="font-medium">Popular This Week</h3>
-              </div>
-              <div className="space-y-2">
-                {popularSearches.slice(0, 8).map((popular, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handlePopularSearchClick(popular.search_query)}
-                    className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm group-hover:text-primary transition-colors">
-                        {popular.search_query}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {popular.search_count}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          )}
         </div>
 
-        {/* Main content area */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Results info */}
-          {total > 0 && !isLoading && (
-            <div className="flex items-center justify-between">
-              <PaginationInfo
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={total}
-                itemsPerPage={itemsPerPage}
-              />
-              <div className="text-sm text-muted-foreground">
-                {searchQuery && `Results for "${searchQuery}"`}
+        {/* Search Type Tabs */}
+        <div className="flex justify-center">
+          <Tabs value={searchType} onValueChange={(value) => setSearchType(value as any)}>
+            <TabsList className="grid w-full grid-cols-3 max-w-md">
+              <TabsTrigger value="all" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                All
+              </TabsTrigger>
+              <TabsTrigger value="books" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Books
+              </TabsTrigger>
+              <TabsTrigger value="bundles" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Bundles
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar with filters and popular searches */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Advanced Filters */}
+            <AdvancedSearchFilters
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              categories={categories}
+              tags={tags}
+              showCompact={false}
+            />
+
+            {/* Popular Searches */}
+            {popularSearches.length > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="h-4 w-4" />
+                  <h3 className="font-medium">Popular This Week</h3>
+                </div>
+                <div className="space-y-2">
+                  {popularSearches.slice(0, 8).map((popular, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePopularSearchClick(popular.search_query)}
+                      className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm group-hover:text-primary transition-colors">
+                          {popular.search_query}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {popular.search_count}
+                        </Badge>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Main content area */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Results info */}
+            {total > 0 && !isLoading && (
+              <div className="flex items-center justify-between">
+                <PaginationInfo
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={total}
+                  itemsPerPage={itemsPerPage}
+                />
+                <div className="text-sm text-muted-foreground">
+                  {searchQuery && `Results for "${searchQuery}"`}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Search Results */}
-          <SearchResults
-            results={results}
-            searchQuery={searchQuery}
-            isLoading={isLoading}
-            showRanking={true}
-            emptyMessage={
-              searchQuery 
-                ? "No results found. Try adjusting your search terms or filters."
-                : "Enter a search term to find books and bundles."
-            }
-          />
+            {/* Search Results */}
+            <SearchResults
+              results={results}
+              searchQuery={searchQuery}
+              isLoading={isLoading}
+              showRanking={true}
+              emptyMessage={
+                searchQuery 
+                  ? "No results found. Try adjusting your search terms or filters."
+                  : "Enter a search term to find books and bundles."
+              }
+            />
 
-          {/* Error state */}
-          {error && !isLoading && (
-            <Card className="p-8 text-center">
-              <div className="text-destructive mb-4">
-                <h3 className="font-medium mb-2">Search Error</h3>
-                <p className="text-sm">{error}</p>
+            {/* Error state */}
+            {error && !isLoading && (
+              <Card className="p-8 text-center">
+                <div className="text-destructive mb-4">
+                  <h3 className="font-medium mb-2">Search Error</h3>
+                  <p className="text-sm">{error}</p>
+                </div>
+                <Button onClick={performSearch} variant="outline">
+                  Try Again
+                </Button>
+              </Card>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && !isLoading && (
+              <div className="flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
               </div>
-              <Button onClick={performSearch} variant="outline">
-                Try Again
-              </Button>
-            </Card>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && !isLoading && (
-            <div className="flex justify-center">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Suspense>
   )
 }
