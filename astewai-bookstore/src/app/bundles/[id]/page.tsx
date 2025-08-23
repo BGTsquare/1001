@@ -7,7 +7,7 @@ import { generateBundlePageStructuredData } from '@/lib/seo/page-structured-data
 import { MultipleStructuredData } from '@/components/seo/structured-data'
 
 interface BundlePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -15,7 +15,8 @@ interface BundlePageProps {
  * Displays detailed information about a specific bundle including books, pricing, and purchase options
  */
 export default async function BundleDetailPage({ params }: BundlePageProps) {
-  const { id } = await params
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   // Fetch bundle data using service layer
   const result = await bundleService.getBundleById(id);
   
@@ -49,7 +50,8 @@ export default async function BundleDetailPage({ params }: BundlePageProps) {
  * Creates SEO-optimized title, description, and Open Graph tags
  */
 export async function generateMetadata({ params }: BundlePageProps) {
-  const { id } = await params
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const result = await bundleService.getBundleById(id);
   
   if (!result.success || !result.data) {

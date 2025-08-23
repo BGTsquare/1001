@@ -6,9 +6,9 @@ import { generateBookPageStructuredData } from '@/lib/seo/page-structured-data'
 import { MultipleStructuredData } from '@/components/seo/structured-data'
 
 interface BookPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 /**
@@ -16,7 +16,8 @@ interface BookPageProps {
  * Displays detailed information about a specific book including content preview and purchase options
  */
 export default async function BookPage({ params }: BookPageProps) {
-  const { id } = await params
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const result = await bookService.getBookById(id)
   
   if (!result.success || !result.data) {
@@ -43,7 +44,8 @@ export default async function BookPage({ params }: BookPageProps) {
  * Creates SEO-optimized title, description, and Open Graph tags
  */
 export async function generateMetadata({ params }: BookPageProps) {
-  const { id } = await params
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const result = await bookService.getBookById(id)
   
   if (!result.success || !result.data) {

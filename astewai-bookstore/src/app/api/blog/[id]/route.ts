@@ -14,10 +14,11 @@ const updateBlogPostSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const params = await context.params;
     const { id } = params;
 
     const { data, error } = await supabase
@@ -52,10 +53,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const params = await context.params;
     const { id } = params;
     
     // Check if user is authenticated and is admin
@@ -125,10 +127,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const params = await context.params;
     const { id } = params;
     
     // Check if user is authenticated and is admin

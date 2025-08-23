@@ -4,10 +4,11 @@ import { libraryService } from '@/lib/services/library-service'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  context: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const { bookId } = await params
+    const params = await context.params;
+    const { bookId } = params;
     const supabase = await createClient()
     
     // Get current user

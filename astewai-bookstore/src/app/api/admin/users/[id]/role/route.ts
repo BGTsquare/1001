@@ -3,11 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const supabase = createClient();
     const { role } = await request.json();
 

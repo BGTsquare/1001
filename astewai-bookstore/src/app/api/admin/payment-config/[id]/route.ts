@@ -4,10 +4,11 @@ import { paymentConfigService } from '@/lib/services/payment-config-service'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const supabase = await createClient()
     
     // Check authentication
@@ -72,10 +73,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const supabase = await createClient()
     
     // Check authentication

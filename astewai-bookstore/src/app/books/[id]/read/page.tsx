@@ -5,13 +5,14 @@ import { libraryService } from '@/lib/services/library-service'
 import { BookReader } from '@/components/books/book-reader'
 
 interface ReadPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ReadPage({ params }: ReadPageProps) {
-  const { id } = await params
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const supabase = await createClient()
   
   // Get current user

@@ -7,11 +7,11 @@ const contactService = new ContactService();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

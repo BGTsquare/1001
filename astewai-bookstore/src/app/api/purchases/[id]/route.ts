@@ -4,11 +4,11 @@ import { paymentRepository } from '@/lib/repositories/payment-repository'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const supabase = await createClient()
     
     // Check authentication

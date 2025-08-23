@@ -6,9 +6,10 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-export const GET = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
+export const GET = withAdminAuth(async (request: NextRequest, context: RouteParams) => {
   try {
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const result = await bookService.getBookById(id)
 
     if (!result.success) {
@@ -29,9 +30,10 @@ export const GET = withAdminAuth(async (request: NextRequest, { params }: RouteP
   }
 })
 
-export const PUT = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
+export const PUT = withAdminAuth(async (request: NextRequest, context: RouteParams) => {
   try {
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const updateData = await request.json()
     
     const result = await bookService.updateBook(id, updateData)
@@ -54,9 +56,10 @@ export const PUT = withAdminAuth(async (request: NextRequest, { params }: RouteP
   }
 })
 
-export const DELETE = withAdminAuth(async (request: NextRequest, { params }: RouteParams) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, context: RouteParams) => {
   try {
-    const { id } = await params
+    const params = await context.params;
+    const { id } = params;
     const result = await bookService.deleteBook(id)
 
     if (!result.success) {

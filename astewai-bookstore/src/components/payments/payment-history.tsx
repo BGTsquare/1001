@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, DollarSign } from 'lucide-react';
+import { AlertCircle, Loader2, DollarSign, Clock, CheckCircle, Search, Calendar, Eye, Download, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PaymentStatusTracker } from './payment-status-tracker';
 import { PaymentReceiptDialog } from './payment-receipt-dialog';
 import { PaymentCancellationDialog } from './payment-cancellation-dialog';
-import { PaymentStatsCards } from './payment-stats-cards';
-import { PaymentFilters } from './payment-filters';
-import { PaymentRequestCard } from './payment-request-card';
+// Removed unused imports: PaymentStatsCards, PaymentFilters, PaymentRequestCard
 import { usePaymentHistory } from '@/hooks/use-payment-history';
 import type { PurchaseRequest } from '@/types';
 
