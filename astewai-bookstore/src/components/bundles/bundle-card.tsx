@@ -47,16 +47,16 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
   }, [books, price])
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
+    <Card className={`card-enhanced hover-lift group ${className}`}>
+      <CardHeader className="pb-3 relative">
         {/* Bundle Cover Display */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gradient-warm shadow-soft">
           {cover_image_url ? (
             <Image
               src={cover_image_url}
               alt={`${title} bundle cover`}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
               priority={false}
               onError={(e) => {
@@ -65,11 +65,11 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
               }}
             />
           ) : displayBooks.length > 0 ? (
-            <div className={`grid grid-cols-${BOOK_GRID_COLS} gap-1 h-full p-2`}>
+            <div className={`grid grid-cols-${BOOK_GRID_COLS} gap-2 h-full p-3`}>
               {displayBooks.map((book, index) => (
                 <div
                   key={book.id}
-                  className="relative overflow-hidden rounded bg-muted-foreground/10"
+                  className="relative overflow-hidden rounded-lg bg-card shadow-soft border border-border/50 transition-transform duration-300 hover:scale-105"
                 >
                   {book.cover_image_url ? (
                     <Image
@@ -80,23 +80,28 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
                       sizes="(max-width: 768px) 50vw, 25vw"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex h-full items-center justify-center bg-gradient-accent">
+                      <BookOpen className="h-4 w-4 text-accent-foreground" />
                     </div>
                   )}
                 </div>
               ))}
-              
+
               {/* Show remaining count if there are more books */}
               {remainingCount > 0 && displayBooks.length === MAX_DISPLAY_BOOKS && (
-                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                  +{remainingCount}
+                <div className="absolute bottom-3 right-3 glass-card text-primary text-xs px-3 py-1.5 rounded-full font-semibold shadow-medium">
+                  +{remainingCount} more
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <Package className="h-16 w-16 text-muted-foreground" />
+            <div className="flex h-full items-center justify-center bg-gradient-warm">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Package className="h-8 w-8 text-primary" />
+                </div>
+                <span className="text-muted-foreground text-sm">Bundle Collection</span>
+              </div>
             </div>
           )}
         </div>

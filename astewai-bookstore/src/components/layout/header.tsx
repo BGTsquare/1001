@@ -14,49 +14,55 @@ export function Header() {
   };
 
   return (
-    <header 
-      className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-top"
+    <header
+      className="sticky top-0 z-50 glass-header border-b border-glass-border safe-area-top"
       role="banner"
     >
-      <div className="container-mobile flex h-14 sm:h-16 items-center justify-between">
-        <div className="flex items-center space-x-4 sm:space-x-8">
-          <Link 
-            href={ROUTES.HOME} 
-            className="flex items-center space-x-2 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+      <div className="container-mobile flex h-16 sm:h-18 items-center justify-between">
+        <div className="flex items-center space-x-6 sm:space-x-8">
+          <Link
+            href={ROUTES.HOME}
+            className="flex items-center space-x-2 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg px-2 py-1 hover-glow transition-all duration-300"
             aria-label={`${APP_NAME} - Go to homepage`}
           >
-            <span className="text-mobile-lg sm:text-xl font-bold truncate max-w-[150px] sm:max-w-none">{APP_NAME}</span>
+            <span className="text-mobile-lg sm:text-xl font-bold truncate max-w-[150px] sm:max-w-none bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {APP_NAME}
+            </span>
           </Link>
 
-          <nav 
-            className="hidden md:flex items-center space-x-6" 
-            role="navigation" 
+          <nav
+            className="hidden md:flex items-center space-x-8"
+            role="navigation"
             aria-label="Main navigation"
             id="navigation"
           >
             <Link
               href={ROUTES.BOOKS}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
+              className="text-sm font-medium transition-all duration-300 hover:text-primary hover:scale-105 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg px-3 py-2 relative group"
             >
               Books
+              <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
             </Link>
             <Link
               href={ROUTES.BUNDLES}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
+              className="text-sm font-medium transition-all duration-300 hover:text-primary hover:scale-105 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg px-3 py-2 relative group"
             >
               Bundles
+              <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
             </Link>
             <Link
               href={ROUTES.BLOG}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
+              className="text-sm font-medium transition-all duration-300 hover:text-primary hover:scale-105 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg px-3 py-2 relative group"
             >
               Blog
+              <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
             </Link>
             <Link
               href={ROUTES.CONTACT}
-              className="text-sm font-medium transition-colors hover:text-primary touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md px-2 py-1"
+              className="text-sm font-medium transition-all duration-300 hover:text-primary hover:scale-105 touch-target focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg px-3 py-2 relative group"
             >
               Contact
+              <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
             </Link>
           </nav>
         </div>
