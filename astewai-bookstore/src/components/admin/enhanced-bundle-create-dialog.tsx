@@ -15,13 +15,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-    Upload, 
-    Plus, 
-    BookOpen, 
-    Image, 
+import {
+    Upload,
+    Plus,
+    BookOpen,
+    Image,
     AlertCircle,
-    Loader2
+    Loader2,
+    Trash2,
+    FileText,
+    CheckCircle
 } from 'lucide-react'
 import { BookEditor } from './book-editor'
 import { useBundleCreation } from '@/hooks/use-bundle-creation'
