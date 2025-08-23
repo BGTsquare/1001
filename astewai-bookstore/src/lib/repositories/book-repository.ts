@@ -137,10 +137,15 @@ export class BookRepository {
   /**
    * Get all books with optional filtering and pagination
    */
-  async getAll(options: BookSearchOptions = {}): Promise<Book[]> {
+  async getAll(options: BookSearchOptions & { includeBundleOnly?: boolean } = {}): Promise<Book[]> {
     try {
       const supabase = await this.getSupabaseClient()
       let query = supabase.from('books').select('*')
+
+      // Exclude bundle-only books by default (unless explicitly requested)
+      if (!options.includeBundleOnly) {
+        query = query.eq('bundle_only', false)
+      }
 
       // Apply filters
       if (options.category) {

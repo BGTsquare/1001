@@ -67,9 +67,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create books first (will be cleaned up if bundle creation fails)
+    // Mark books as bundle-only so they don't appear in the main catalog
+    const booksWithBundleFlag = books.map(book => ({
+      ...book,
+      bundle_only: true
+    }))
+
     const { data: createdBooks, error: booksError } = await supabase
       .from('books')
-      .insert(books)
+      .insert(booksWithBundleFlag)
       .select('id, title, author, price')
 
     if (booksError || !createdBooks) {

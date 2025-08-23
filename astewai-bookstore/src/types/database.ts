@@ -59,6 +59,7 @@ export type Database = {
           is_free: boolean
           category: string | null
           tags: string[] | null
+          bundle_only: boolean
           created_at: string
           updated_at: string
         }
@@ -73,6 +74,7 @@ export type Database = {
           is_free?: boolean
           category?: string | null
           tags?: string[] | null
+          bundle_only?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -87,6 +89,7 @@ export type Database = {
           is_free?: boolean
           category?: string | null
           tags?: string[] | null
+          bundle_only?: boolean
           created_at?: string
           updated_at?: string
         }

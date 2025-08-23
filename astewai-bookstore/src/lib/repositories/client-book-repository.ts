@@ -137,7 +137,7 @@ export class ClientBookRepository {
   /**
    * Get all books with optional filtering and pagination
    */
-  async getAll(options: BookSearchOptions = {}): Promise<SearchResult[]> {
+  async getAll(options: BookSearchOptions & { includeBundleOnly?: boolean } = {}): Promise<SearchResult[]> {
     // Try advanced search first, fallback to basic search if it fails
     try {
       const { data, error } = await this.supabase.rpc('search_books', {
@@ -147,6 +147,7 @@ export class ClientBookRepository {
         price_min: options.priceRange?.[0] || null,
         price_max: options.priceRange?.[1] || null,
         is_free_filter: options.isFree !== undefined ? options.isFree : null,
+        include_bundle_only: options.includeBundleOnly || false,
         limit_count: options.limit || 20,
         offset_count: options.offset || 0,
         sort_by: options.sortBy || 'created_at',
@@ -556,12 +557,14 @@ export class ClientBookRepository {
   async unifiedSearch(options: BookSearchOptions & {
     includeBooks?: boolean
     includeBundles?: boolean
+    includeBundleOnly?: boolean
   } = {}): Promise<unknown[]> {
     try {
       const { data, error } = await this.supabase.rpc('unified_search', {
         search_query: options.query || '',
         include_books: options.includeBooks !== false,
         include_bundles: options.includeBundles !== false,
+        include_bundle_only_books: options.includeBundleOnly || false,
         category_filter: options.category || null,
         tags_filter: options.tags || null,
         price_min: options.priceRange?.[0] || null,

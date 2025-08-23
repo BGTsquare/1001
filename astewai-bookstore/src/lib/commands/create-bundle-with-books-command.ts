@@ -108,9 +108,15 @@ export class CreateBundleWithBooksCommand {
 
   private async createBooks(books: BookInsert[]): Promise<CommandResult<any>> {
     try {
+      // Mark books as bundle-only so they don't appear in the main catalog
+      const booksWithBundleFlag = books.map(book => ({
+        ...book,
+        bundle_only: true
+      }))
+
       const { data: createdBooks, error } = await this.supabase
         .from('books')
-        .insert(books)
+        .insert(booksWithBundleFlag)
         .select('id, title, author, price')
 
       if (error || !createdBooks) {

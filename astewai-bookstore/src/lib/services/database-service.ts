@@ -41,13 +41,15 @@ export class DatabaseService {
     isFree?: boolean
     limit?: number
     offset?: number
+    includeBundleOnly?: boolean
   }): Promise<Book[]> {
     const result = await bookRepository.getAll({
       category: filters?.category,
       query: filters?.search,
       isFree: filters?.isFree,
       limit: filters?.limit,
-      offset: filters?.offset
+      offset: filters?.offset,
+      includeBundleOnly: filters?.includeBundleOnly
     })
     return result.success ? result.data : []
   }
