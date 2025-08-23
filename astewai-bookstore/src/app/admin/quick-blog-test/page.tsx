@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function QuickBlogTestPage() {
+function QuickBlogTestPageContent() {
   const [result, setResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -157,5 +157,13 @@ export default function QuickBlogTestPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function QuickBlogTestPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <QuickBlogTestPageContent />
+    </Suspense>
   );
 }

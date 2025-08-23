@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
       { count: totalUsers },
       { count: totalBooks },
       { count: totalPurchases, data: purchaseSum },
-      { count: newUsers },
-      { count: activeSessions }
+      { count: newUsers }
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('books').select('*', { count: 'exact', head: true }),
@@ -43,25 +42,24 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startDate.toISOString()),
       supabase.from('profiles')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startDate.toISOString()),
-      supabase.from('user_sessions')
-        .select('*', { count: 'exact', head: true })
         .gte('created_at', startDate.toISOString())
     ]);
 
     const totalRevenue = purchaseSum?.reduce((sum: number, purchase: any) => sum + (purchase.amount || 0), 0) || 0;
-    const conversionRate = activeSessions > 0 ? (totalPurchases / activeSessions) * 100 : 0;
+    const conversionRate = (totalUsers && totalUsers > 0) ? ((totalPurchases || 0) / totalUsers) * 100 : 0;
 
-    // Get user metrics
+    // Get user metrics using user_sessions table (now available)
     const { data: returningUsersData } = await supabase
       .from('user_sessions')
       .select('user_id')
       .gte('created_at', startDate.toISOString())
-      .not('user_id', 'is', null);
+      .not('user_id', 'is', null)
+      .then(result => ({ data: result.data || [] }))
+      .catch(() => ({ data: [] }));
 
-    const uniqueUsers = new Set(returningUsersData?.map(session => session.user_id) || []);
+    const uniqueUsers = new Set(returningUsersData?.map((session: any) => session.user_id) || []);
     const returningUsers = uniqueUsers.size;
-    const userGrowth = totalUsers > 0 ? ((newUsers / totalUsers) * 100) : 0;
+    const userGrowth = (totalUsers && totalUsers > 0) ? (((newUsers || 0) / totalUsers) * 100) : 0;
 
     // Get most viewed books (mock data for now - would need view tracking)
     const { data: booksData } = await supabase

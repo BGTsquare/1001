@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, display_name, role, created_at')
+        .select('id, display_name, role, created_at')
         .gte('created_at', startDate.toISOString()),
       supabase
         .from('books')
@@ -50,9 +50,7 @@ export async function GET(request: NextRequest) {
           status,
           created_at,
           item_type,
-          profiles:user_id(email),
-          books:item_id(title),
-          bundles:item_id(title)
+          item_id
         `)
         .gte('created_at', startDate.toISOString()),
       supabase
@@ -62,8 +60,7 @@ export async function GET(request: NextRequest) {
           status,
           progress,
           added_at,
-          profiles:user_id(email),
-          books:book_id(title)
+          book_id
         `)
         .gte('added_at', startDate.toISOString())
     ]);
@@ -73,9 +70,9 @@ export async function GET(request: NextRequest) {
 
     // Users section
     csvSections.push('USERS');
-    csvSections.push('ID,Email,Display Name,Role,Created At');
+    csvSections.push('ID,Display Name,Role,Created At');
     users?.forEach(user => {
-      csvSections.push(`${user.id},${user.email},${user.display_name || ''},${user.role},${user.created_at}`);
+      csvSections.push(`${user.id},${user.display_name || ''},${user.role},${user.created_at}`);
     });
     csvSections.push('');
 
@@ -89,20 +86,17 @@ export async function GET(request: NextRequest) {
 
     // Purchases section
     csvSections.push('PURCHASES');
-    csvSections.push('ID,User Email,Item Name,Amount,Status,Created At');
+    csvSections.push('ID,Item Type,Item ID,Amount,Status,Created At');
     purchases?.forEach(purchase => {
-      const itemName = purchase.item_type === 'book' 
-        ? purchase.books?.title || 'Unknown Book'
-        : purchase.bundles?.title || 'Unknown Bundle';
-      csvSections.push(`${purchase.id},${purchase.profiles?.email || ''},"${itemName}",${purchase.amount},${purchase.status},${purchase.created_at}`);
+      csvSections.push(`${purchase.id},${purchase.item_type},${purchase.item_id},${purchase.amount},${purchase.status},${purchase.created_at}`);
     });
     csvSections.push('');
 
     // User Library section
     csvSections.push('USER LIBRARY');
-    csvSections.push('ID,User Email,Book Title,Status,Progress,Added At');
+    csvSections.push('ID,Book ID,Status,Progress,Added At');
     userLibrary?.forEach(entry => {
-      csvSections.push(`${entry.id},${entry.profiles?.email || ''},"${entry.books?.title || ''}",${entry.status},${entry.progress},${entry.added_at}`);
+      csvSections.push(`${entry.id},${entry.book_id},${entry.status},${entry.progress},${entry.added_at}`);
     });
 
     const csvContent = csvSections.join('\n');

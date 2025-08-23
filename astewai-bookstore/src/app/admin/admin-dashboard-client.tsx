@@ -50,5 +50,16 @@ export function AdminDashboardClient() {
     )
   }
 
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">No Data Available</h2>
+          <p className="text-muted-foreground">Unable to load dashboard statistics</p>
+        </div>
+      </div>
+    )
+  }
+
   return <AdminDashboard stats={stats} />
 }

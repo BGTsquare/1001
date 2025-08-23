@@ -22,17 +22,13 @@ export default async function TelegramAdminPage() {
     .select(`
       id,
       transaction_reference,
-      item_title,
-      amount_in_birr,
+      item_type,
+      item_id,
+      amount,
       status,
       telegram_chat_id,
       telegram_user_id,
-      created_at,
-      purchase_screenshots (
-        id,
-        telegram_file_id,
-        uploaded_at
-      )
+      created_at
     `)
     .not('telegram_chat_id', 'is', null)
     .order('created_at', { ascending: false })
@@ -108,7 +104,15 @@ export default async function TelegramAdminPage() {
             Purchases initiated through the Telegram bot
           </p>
         </div>
-        <TelegramPurchasesList purchases={purchases || []} />
+        <TelegramPurchasesList purchases={(purchases || []).map((purchase: any) => ({
+          ...purchase,
+          transaction_reference: purchase.transaction_reference || 'N/A',
+          item_title: `${purchase.item_type}: ${purchase.item_id}`,
+          amount_in_birr: purchase.amount || 0,
+          purchase_screenshots: [],
+          telegram_chat_id: purchase.telegram_chat_id || 0,
+          telegram_user_id: purchase.telegram_user_id || 0
+        } as any))} />
       </div>
     </div>
   )

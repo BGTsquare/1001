@@ -33,7 +33,12 @@
     "email:test": "vitest --run src/**/*email*.test.{ts,tsx}",
     "dev:fix": "node scripts/fix-dev-server.js",
     "dev:restart": "node scripts/restart-dev.js",
-    "storage:fix": "node scripts/fix-storage.js"
+    "storage:fix": "node scripts/fix-storage.js",
+    "build:safe": "next build",
+    "type-check:safe": "tsc --project tsconfig.build.json --noEmit",
+    "build:deploy": "copy next.config.deploy.js next.config.js && copy src\\app\\sitemap.deploy.ts src\\app\\sitemap.ts && next build",
+    "deploy:vercel": "npm run build:deploy && vercel --prod",
+    "deploy:safe": "npm run build:deploy"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",

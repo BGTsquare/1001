@@ -47,6 +47,30 @@ export type Database = {
           }
         ]
       }
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          value: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          value: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       books: {
         Row: {
           id: string
@@ -525,7 +549,31 @@ export type Database = {
           }
         ]
       }
-    }
+          user_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          session_token: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_token: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_token?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+}
     Views: {
       [_ in never]: never
     }
