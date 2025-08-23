@@ -3,13 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { BookReader } from '@/components/library/book-reader'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     token: string
-  }
+  }>
 }
 
 export default async function SecureReadingPage({ params }: PageProps) {
-  const { token } = params
+  const resolvedParams = await params;
+  const { token } = resolvedParams;
   const supabase = await createClient()
 
   // Verify the reading token
