@@ -5,7 +5,7 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useEffect, ReactNode, useMemo, Suspense } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { useAuth } from '@/contexts/auth-context';
 import { identifyUser } from '@/lib/analytics';
@@ -24,15 +24,18 @@ export function useAnalyticsContext() {
   return useContext(AnalyticsContext);
 }
 
+// Separate component for page tracking to handle Suspense boundary
+function PageTracker() {
+  usePageTracking();
+  return null;
+}
+
 interface AnalyticsProviderProps {
   children: ReactNode;
 }
 
 export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
   const { user, profile } = useAuth();
-  
-  // Track page views automatically
-  usePageTracking();
 
   // Memoize user identification to prevent unnecessary calls
   const userIdentification = useMemo(() => {
@@ -99,10 +102,14 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 
   return (
     <AnalyticsContext.Provider value={contextValue}>
+      {/* Page tracking wrapped in Suspense to handle useSearchParams */}
+      <Suspense fallback={null}>
+        <PageTracker />
+      </Suspense>
       {children}
       {/* Vercel Analytics */}
       {analyticsConfig.vercel.enabled && (
-        <Analytics 
+        <Analytics
           debug={analyticsConfig.vercel.debug}
         />
       )}

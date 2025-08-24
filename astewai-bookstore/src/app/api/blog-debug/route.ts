@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getBlogPosts } from '@/lib/database';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const posts = await getBlogPosts({ published: true });

@@ -33,7 +33,6 @@ const nextConfig = {
   // Experimental features
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js'],
-    missingSuspenseWithCSRBailout: false,
   },
   
   // Skip static generation for problematic pages
