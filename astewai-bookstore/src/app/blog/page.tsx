@@ -4,6 +4,9 @@ import { StructuredData } from '@/components/seo/structured-data';
 import { BlogList } from '@/components/blog';
 import { getBlogPosts } from '@/lib/database';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 export const metadata = generateMetadata({
   title: 'Blog - Book Reviews, Reading Tips & Author Interviews',
   description: 'Read our latest blog posts about books, reading tips, author interviews, and literary discussions. Stay updated with the world of books.',
