@@ -1,5 +1,8 @@
 import { getBlogPosts } from '@/lib/database';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 export default async function BlogDebugPage() {
   try {
     const posts = await getBlogPosts({ published: true });
