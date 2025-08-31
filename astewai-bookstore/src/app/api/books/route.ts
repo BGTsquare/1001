@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bookService } from '@/lib/books'
 
+// Force dynamic rendering to avoid caching issues
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -28,35 +32,84 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(result.data)
+    const response = NextResponse.json(result.data)
+
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+
+    return response
   } catch (error) {
     console.error('Error in GET /api/books:', error)
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
+
+    // Add CORS headers to error response too
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*')
+    errorResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    errorResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+    return errorResponse
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     const result = await bookService.createBook(body)
 
     if (!result.success) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: result.error, validationErrors: result.validationErrors },
         { status: 400 }
       )
+
+      // Add CORS headers
+      errorResponse.headers.set('Access-Control-Allow-Origin', '*')
+      errorResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      errorResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+      return errorResponse
     }
 
-    return NextResponse.json(result.data, { status: 201 })
+    const response = NextResponse.json(result.data, { status: 201 })
+
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+    return response
   } catch (error) {
     console.error('Error in POST /api/books:', error)
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
+
+    // Add CORS headers to error response
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*')
+    errorResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    errorResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+    return errorResponse
   }
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  })
 }

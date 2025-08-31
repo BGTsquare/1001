@@ -11,9 +11,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // Image optimization - temporarily disabled for Supabase storage issues
+  // Image optimization - configured for production
   images: {
-    unoptimized: true, // Disable optimization to avoid 500 errors
+    unoptimized: true, // Keep disabled to avoid 500 errors with external images
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
@@ -41,6 +41,18 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.vercel.app',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+    // Add fallback domains for better compatibility
+    domains: [
+      'images.unsplash.com',
+      'jgzfavokqqipdufgnqac.supabase.co',
+      'byxggitbwomgnxuegxgt.supabase.co'
     ],
   },
   

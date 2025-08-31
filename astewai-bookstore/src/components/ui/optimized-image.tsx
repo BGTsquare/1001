@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface OptimizedImageProps {
   src: string
@@ -27,6 +27,12 @@ export function OptimizedImage({
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Reset error state when src changes
+  useEffect(() => {
+    setHasError(false)
+    setIsLoading(true)
+  }, [src])
+
   const handleError = () => {
     setHasError(true)
     setIsLoading(false)
@@ -35,6 +41,20 @@ export function OptimizedImage({
 
   const handleLoad = () => {
     setIsLoading(false)
+  }
+
+  // If no src provided, show fallback immediately
+  if (!src || src.trim() === '') {
+    return fallback || (
+      <div className={`flex items-center justify-center bg-gray-100 dark:bg-gray-800 ${className}`}>
+        <div className="text-center p-4">
+          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <span className="text-gray-500 dark:text-gray-400">📷</span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">No image</p>
+        </div>
+      </div>
+    )
   }
 
   // If there's an error, show fallback
@@ -93,14 +113,14 @@ export function BookCoverImage({
     <div className={`flex h-full items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 ${className}`}>
       <div className="text-center">
         <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-primary text-sm sm:text-lg font-semibold">{title.charAt(0)}</span>
+          <span className="text-primary text-sm sm:text-lg font-semibold">{title.charAt(0).toUpperCase()}</span>
         </div>
         <span className="text-muted-foreground text-xs sm:text-mobile-sm">No cover</span>
       </div>
     </div>
   )
 
-  if (!src) {
+  if (!src || src.trim() === '') {
     return fallback
   }
 
