@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, DragHandleDots2Icon } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -342,7 +342,7 @@ export function PaymentConfigManagement() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <DragHandleDots2Icon className="h-4 w-4 text-gray-400" />
+                        <GripVertical className="h-4 w-4 text-gray-400" />
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium">{config.provider_name}</h3>
