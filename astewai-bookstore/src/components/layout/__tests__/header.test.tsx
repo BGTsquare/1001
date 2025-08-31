@@ -48,7 +48,7 @@ describe('Header', () => {
   it('renders the app name and navigation links', () => {
     renderHeader();
     
-    expect(screen.getByText('Astewai Digital Bookstore')).toBeInTheDocument();
+    expect(screen.getByText('Astewai')).toBeInTheDocument();
     expect(screen.getByText('Books')).toBeInTheDocument();
     expect(screen.getByText('Bundles')).toBeInTheDocument();
     expect(screen.getByText('Blog')).toBeInTheDocument();

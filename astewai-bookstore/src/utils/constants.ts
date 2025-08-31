@@ -1,6 +1,6 @@
 // Application constants
 
-export const APP_NAME = 'Astewai Digital Bookstore';
+export const APP_NAME = 'Astewai';
 export const APP_DESCRIPTION =
   'A modern digital bookstore platform for browsing, purchasing, and reading digital books online.';
 
