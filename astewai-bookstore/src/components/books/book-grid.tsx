@@ -8,6 +8,7 @@ import { AdvancedSearchFilters } from './advanced-search-filters'
 import { SearchResults } from './search-results'
 import { Pagination, PaginationInfo } from './pagination'
 import { clientBookService } from '@/lib/services/client-book-service'
+import { getFallbackBooks } from '@/lib/fallback-data'
 import type { Book, BookFilters } from '@/types'
 import type { BookSearchOptions, SearchResult } from '@/lib/repositories/client-book-repository'
 import { cn } from '@/lib/utils'
@@ -60,13 +61,22 @@ export function BookGrid({
 
         if (categoriesResult.success && categoriesResult.data) {
           setCategories(categoriesResult.data)
+        } else {
+          // Use fallback categories
+          setCategories(['Technology', 'Fiction', 'Non-Fiction', 'Business', 'Education'])
         }
 
         if (tagsResult.success && tagsResult.data) {
           setTags(tagsResult.data)
+        } else {
+          // Use fallback tags
+          setTags(['programming', 'web', 'javascript', 'react', 'python', 'database', 'devops'])
         }
       } catch (error) {
-        console.error('Error loading filter options:', error)
+        console.error('Error loading filter options, using fallback:', error)
+        // Use fallback data when API is completely inaccessible
+        setCategories(['Technology', 'Fiction', 'Non-Fiction', 'Business', 'Education'])
+        setTags(['programming', 'web', 'javascript', 'react', 'python', 'database', 'devops'])
       }
     }
 
@@ -104,15 +114,28 @@ export function BookGrid({
           setTotal(result.data.total)
         }
       } else {
-        setError(result.error || 'Failed to load books')
-        setBooks([])
-        setTotal(0)
+        // API failed, use fallback data
+        console.warn('API failed, using fallback data:', result.error)
+        const fallbackData = getFallbackBooks({
+          limit: itemsPerPage,
+          category: filters.category,
+          isFree: filters.isFree
+        })
+        setBooks(fallbackData.books)
+        setTotal(fallbackData.total)
+        setError(null) // Don't show error when fallback works
       }
     } catch (error) {
-      console.error('Error loading books:', error)
-      setError('An unexpected error occurred')
-      setBooks([])
-      setTotal(0)
+      console.error('Error loading books, using fallback data:', error)
+      // Use fallback data when API is completely inaccessible
+      const fallbackData = getFallbackBooks({
+        limit: itemsPerPage,
+        category: filters.category,
+        isFree: filters.isFree
+      })
+      setBooks(fallbackData.books)
+      setTotal(fallbackData.total)
+      setError(null) // Don't show error when fallback works
     } finally {
       setIsLoading(false)
     }
