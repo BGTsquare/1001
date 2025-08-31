@@ -258,77 +258,81 @@ export function SearchBar({
           className="absolute top-full left-0 right-0 mt-1 z-50 max-h-80 overflow-y-auto shadow-lg"
         >
           <div className="p-2">
-            {/* Loading state */}
-            {isLoadingSuggestions && query.trim().length >= 2 && (
-              <div className="px-3 py-2 text-sm text-muted-foreground">
-                Loading suggestions...
-              </div>
-            )}
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="mb-2">
-                <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Suggestions
+            <>
+              {/* Loading state */}
+              {isLoadingSuggestions && query.trim().length >= 2 && (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  Loading suggestions...
                 </div>
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={`suggestion-${index}`}
-                    onClick={() => handleSuggestionClick(suggestion.suggestion)}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-sm hover:bg-muted rounded-md flex items-center justify-between group",
-                      selectedIndex === index && "bg-muted"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Search className="h-3 w-3 text-muted-foreground" />
-                      <span>{highlightMatch(suggestion.suggestion, query)}</span>
-                    </span>
-                    <Badge variant="secondary" className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                      {suggestion.frequency}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            )}
+              )}
 
-            {/* Popular searches */}
-            {popularSearches.length > 0 && query.trim().length === 0 && (
-              <div>
-                <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Popular Searches
+              {/* Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Suggestions
+                  </div>
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={`suggestion-${index}`}
+                      onClick={() => handleSuggestionClick(suggestion.suggestion)}
+                      className={cn(
+                        "w-full px-3 py-2 text-left text-sm hover:bg-muted rounded-md flex items-center justify-between group",
+                        selectedIndex === index && "bg-muted"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Search className="h-3 w-3 text-muted-foreground" />
+                        <span>{highlightMatch(suggestion.suggestion, query)}</span>
+                      </span>
+                      <Badge variant="secondary" className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                        {suggestion.frequency}
+                      </Badge>
+                    </button>
+                  ))}
                 </div>
-                {popularSearches.map((popular, index) => (
-                  <button
-                    key={`popular-${index}`}
-                    onClick={() => handleSuggestionClick(popular.search_query)}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-sm hover:bg-muted rounded-md flex items-center justify-between group",
-                      selectedIndex === suggestions.length + index && "bg-muted"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span>{popular.search_query}</span>
-                    </span>
-                    <Badge variant="secondary" className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                      {popular.search_count}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            )}
+              )}
 
-            {/* No results */}
-            {!isLoadingSuggestions && 
-             suggestions.length === 0 && 
-             popularSearches.length === 0 && 
-             query.trim().length >= 2 && (
-              <div className="px-3 py-2 text-sm text-muted-foreground">
-                No suggestions found
-              </div>
-            )}
+              {/* Popular searches */}
+              {popularSearches.length > 0 && query.trim().length === 0 && (
+                <div>
+                  <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    Popular Searches
+                  </div>
+                  {popularSearches.map((popular, index) => (
+                    <button
+                      key={`popular-${index}`}
+                      onClick={() => handleSuggestionClick(popular.search_query)}
+                      className={cn(
+                        "w-full px-3 py-2 text-left text-sm hover:bg-muted rounded-md flex items-center justify-between group",
+                        selectedIndex === suggestions.length + index && "bg-muted"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span>{popular.search_query}</span>
+                      </span>
+                      <Badge variant="secondary" className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                        {popular.search_count}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Separator */}
+              {suggestions.length > 0 && showPopularSearches && popularSearches.length > 0 && (
+                <div className="border-t border-border my-2" />
+              )}
+
+              {/* No results */}
+              {!isLoadingSuggestions && suggestions.length === 0 && popularSearches.length === 0 && query.trim().length >= 2 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  No suggestions found
+                </div>
+              ) : null}
+            </>
           </div>
         </Card>
       )}

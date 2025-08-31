@@ -20,43 +20,9 @@ export interface BasePurchaseData {
   created_at: string
 }
 
-export interface TelegramPurchaseCreateData extends BasePurchaseData {
-  amount_in_birr: number
-  initiation_token: string
-  transaction_reference: string
-  telegram_chat_id?: number
-  telegram_user_id?: number
-}
 
-export interface TelegramPurchaseData extends BasePurchaseData {
-  amount_in_birr: number
-  initiation_token: string
-  transaction_reference: string
-}
 
-export interface PaymentOption {
-  providerName: string
-  accountNumber: string
-  accountName: string
-  instructions?: string
-}
 
-export interface InitiateTelegramPurchaseParams {
-  userId: string
-  itemType: 'book' | 'bundle'
-  itemId: string
-  amount: number
-}
-
-export interface InitiateTelegramPurchaseResult {
-  success: boolean
-  data?: {
-    purchaseId: string
-    telegramUrl: string
-    transactionReference: string
-  }
-  error?: string
-}
 
 export class PurchaseService {
   private async getSupabaseClient() {
@@ -96,14 +62,7 @@ export class PurchaseService {
     return `AST-${timestamp}-${randomPart}`
   }
 
-  /**
-   * Generates a unique initiation token for Telegram
-   */
-  private generateInitiationToken(): string {
-    const timestamp = Date.now()
-    const randomPart = this.generateSecureRandomString(16)
-    return `tg_${timestamp}_${randomPart}`
-  }
+
 
   /**
    * Generates a cryptographically secure random string
@@ -129,13 +88,7 @@ export class PurchaseService {
     return result
   }
 
-  /**
-   * Creates Telegram bot URL with initiation token
-   */
-  private generateTelegramUrl(initiationToken: string): string {
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'astewaibot'
-    return `https://t.me/${botUsername}?start=${initiationToken}`
-  }
+
 
   async getPurchaseByToken(token: string): Promise<{ purchase: PurchaseInfo; paymentOptions: PaymentOption[] } | null> {
     try {
@@ -207,122 +160,11 @@ export class PurchaseService {
     }
   }
 
-  async initiateTelegramPurchase(params: InitiateTelegramPurchaseParams): Promise<InitiateTelegramPurchaseResult> {
-    try {
-      const { userId, itemType, itemId, amount } = params
 
-      // Input validation
-      if (!userId || typeof userId !== 'string') {
-        return { success: false, error: 'Invalid user ID' }
-      }
-      
-      if (!itemType || !['book', 'bundle'].includes(itemType)) {
-        return { success: false, error: 'Invalid item type' }
-      }
-      
-      if (!itemId || typeof itemId !== 'string') {
-        return { success: false, error: 'Invalid item ID' }
-      }
-      
-      if (!amount || typeof amount !== 'number' || amount <= 0) {
-        return { success: false, error: 'Invalid amount' }
-      }
 
-      console.log('🚀 Received purchase request:', { itemType, itemId, amount, userId })
 
-      // Validate item exists
-      const itemValidation = await this.validateItem(itemType, itemId)
-      if (!itemValidation.success) {
-        return { success: false, error: itemValidation.error }
-      }
 
-      // Generate tokens
-      const transactionReference = this.generateTransactionReference()
-      const initiationToken = this.generateInitiationToken()
 
-      // Create ONLY the basic purchase data that exists in the database
-      const purchaseData = {
-        user_id: userId,
-        item_type: itemType,
-        item_id: itemId,
-        amount: amount,
-        status: PURCHASE_STATUS.PENDING_INITIATION,
-        created_at: new Date().toISOString()
-      }
-
-      console.log('📝 Creating purchase with BASIC data only:', JSON.stringify(purchaseData, null, 2))
-
-      // Insert purchase directly
-      const supabase = await this.getSupabaseClient()
-      const { data: purchase, error: purchaseError } = await supabase
-        .from('purchases')
-        .insert(purchaseData)
-        .select()
-        .single()
-      
-      if (purchaseError || !purchase) {
-        console.error('❌ Error creating purchase:', purchaseError)
-        return { 
-          success: false, 
-          error: `Database error: ${purchaseError?.message || 'Unknown error'}. Please run the database migration from URGENT_DATABASE_FIX.md` 
-        }
-      }
-
-      console.log('✅ Purchase created successfully:', purchase.id)
-
-      // Generate Telegram URL
-      const telegramUrl = this.generateTelegramUrl(initiationToken)
-
-      return {
-        success: true,
-        data: {
-          purchaseId: purchase.id,
-          telegramUrl,
-          transactionReference
-        }
-      }
-
-    } catch (error) {
-      console.error('❌ Error in initiateTelegramPurchase:', error)
-      return { 
-        success: false, 
-        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      }
-    }
-  }
-
-  async updatePurchaseWithTelegram(
-    purchaseId: string, 
-    chatId: number, 
-    userId: number
-  ): Promise<void> {
-    const supabase = await this.getSupabaseClient()
-    await supabase
-      .from('purchases')
-      .update({
-        telegram_chat_id: chatId,
-        telegram_user_id: userId,
-        status: PURCHASE_STATUS.AWAITING_PAYMENT
-      })
-      .eq('id', purchaseId)
-  }
-
-  async findPendingPurchase(chatId: number) {
-    const supabase = await this.getSupabaseClient()
-    const { data: purchases, error } = await supabase
-      .from('purchases')
-      .select('*')
-      .eq('telegram_chat_id', chatId)
-      .eq('status', PURCHASE_STATUS.AWAITING_PAYMENT)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (error || !purchases || purchases.length === 0) {
-      return null
-    }
-
-    return purchases[0]
-  }
 
   async updatePurchaseStatus(purchaseId: string, status: string): Promise<void> {
     const supabase = await this.getSupabaseClient()
@@ -332,21 +174,7 @@ export class PurchaseService {
       .eq('id', purchaseId)
   }
 
-  async findPurchaseByOrderId(orderId: string, chatId: number) {
-    const supabase = await this.getSupabaseClient()
-    const { data: purchases, error } = await supabase
-      .from('purchases')
-      .select('*')
-      .eq('transaction_reference', orderId)
-      .eq('telegram_chat_id', chatId)
-      .single()
 
-    if (error || !purchases) {
-      return null
-    }
-
-    return purchases
-  }
 }
 
 // Export a singleton instance for convenience

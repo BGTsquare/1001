@@ -23,6 +23,7 @@
     "test:accessibility": "vitest --run src/test/accessibility/**/*.test.{ts,tsx}",
     "test:components": "vitest --run src/components/**/*.test.{ts,tsx}",
     "test:api": "vitest --run src/app/api/**/*.test.{ts,tsx}",
+    "test:email-flows": "node scripts/test-email-flows.js",
     "test:services": "vitest --run src/lib/**/*.test.{ts,tsx}",
     "admin:check": "node scripts/check-users.js",
     "admin:make": "node scripts/make-admin.js",

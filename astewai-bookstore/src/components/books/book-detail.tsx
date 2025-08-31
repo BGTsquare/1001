@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Share2, Heart, BookOpen, Star, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { BookPreview } from './book-preview'
 import { BookActions } from './book-actions'
 import { SocialShare } from './social-share'
@@ -54,13 +54,18 @@ export function BookDetail({ book }: BookDetailProps) {
               {/* Book Cover */}
               <div className="relative aspect-[3/4] w-full mb-6 overflow-hidden rounded-lg bg-muted">
                 {cover_image_url ? (
-                  <Image
+                  <OptimizedImage
                     src={cover_image_url}
                     alt={`Cover of ${title}`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 33vw"
                     priority
+                    fallback={
+                      <div className="flex h-full items-center justify-center bg-muted">
+                        <BookOpen className="h-16 w-16 text-muted-foreground" />
+                      </div>
+                    }
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center bg-muted">

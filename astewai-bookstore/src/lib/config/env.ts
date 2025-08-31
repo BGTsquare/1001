@@ -11,17 +11,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().url('Invalid site URL'),
   SUPABASE_AUTH_SITE_URL: z.string().url('Invalid auth site URL').optional(),
   
-  // Telegram Bot Configuration
-  TELEGRAM_BOT_NAME: z.string().min(1, 'Telegram bot name is required'),
-  TELEGRAM_BOT_TOKEN: z.string().regex(
-    /^\d+:[A-Za-z0-9_-]+$/,
-    'Invalid Telegram bot token format'
-  ),
-  TELEGRAM_ADMIN_CHANNEL_ID: z.string().regex(
-    /^-?\d+$/,
-    'Invalid Telegram channel ID format'
-  ),
-  
+
   // Optional Configuration
   STORE_ANALYTICS_EVENTS: z.enum(['true', 'false']).default('false'),
   SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING: z.string().optional(),
@@ -68,11 +58,7 @@ export const config = {
     url: env.NEXT_PUBLIC_SITE_URL,
     authUrl: env.SUPABASE_AUTH_SITE_URL || env.NEXT_PUBLIC_SITE_URL,
   },
-  telegram: {
-    botName: env.TELEGRAM_BOT_NAME,
-    botToken: env.TELEGRAM_BOT_TOKEN,
-    adminChannelId: env.TELEGRAM_ADMIN_CHANNEL_ID,
-  },
+
   features: {
     analytics: env.STORE_ANALYTICS_EVENTS === 'true',
   },

@@ -10,7 +10,7 @@ A modern full-stack digital bookstore platform built with Next.js 14, TypeScript
 - ✍️ Blog system for book-related content
 - 👤 User authentication and profile management
 - 🛡️ Admin dashboard for content management
-- 💳 Secure payment processing
+- 💳 Manual payment processing with admin approval
 - 📱 Responsive design for all devices
 
 ## Tech Stack
@@ -18,7 +18,7 @@ A modern full-stack digital bookstore platform built with Next.js 14, TypeScript
 - **Frontend**: Next.js 14, TypeScript, Tailwind CSS, Shadcn/ui
 - **Backend**: Supabase (Auth, Database, Storage)
 - **Database**: PostgreSQL with Row Level Security
-- **Payments**: Stripe
+- **Payments**: Manual payment system with admin approval
 - **Package Manager**: pnpm
 
 ## Getting Started

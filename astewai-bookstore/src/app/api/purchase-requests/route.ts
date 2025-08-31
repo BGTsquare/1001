@@ -7,7 +7,7 @@ const contactService = new ContactService();
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -64,8 +64,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const request_data = await contactService.createPurchaseRequest(user.id, validationResult.data);
-    return NextResponse.json({ data: request_data }, { status: 201 });
+    const { itemType, itemId, amount, preferredContactMethod, userMessage } = validationResult.data;
+    const result = await contactService.createPurchaseRequest(
+      user.id,
+      itemType,
+      itemId,
+      amount,
+      preferredContactMethod,
+      userMessage
+    );
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status || 400 }
+      );
+    }
+
+    return NextResponse.json({ data: result.data }, { status: 201 });
   } catch (error) {
     console.error('Error creating purchase request:', error);
     return NextResponse.json(

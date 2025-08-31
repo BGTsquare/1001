@@ -25,9 +25,9 @@ export function BundleActions({ bundle }: BundleActionsProps) {
     }
 
     setIsPurchasing(true)
-    
+
     try {
-      const response = await fetch('/api/purchases/initiate-telegram', {
+      const response = await fetch('/api/purchases/simple', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,16 +42,12 @@ export function BundleActions({ bundle }: BundleActionsProps) {
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to initiate bundle purchase')
+        throw new Error(result.error || 'Failed to create purchase request')
       }
 
-      // Redirect to Telegram bot
-      if (result.data?.telegramUrl) {
-        toast.success('Redirecting to Telegram for payment...')
-        window.location.href = result.data.telegramUrl
-      } else {
-        throw new Error('No Telegram URL received')
-      }
+      // Show success message and redirect to payment instructions
+      toast.success('Purchase request created! Redirecting to payment instructions...')
+      router.push(`/payment-instructions?purchaseId=${result.data.purchaseId}`)
     } catch (error) {
       console.error('Error initiating bundle purchase:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to initiate bundle purchase')

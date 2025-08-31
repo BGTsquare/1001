@@ -147,15 +147,13 @@ export function generateCancellationMessage(
 /**
  * Get message template suggestions based on contact method
  */
-export function getMessageTemplateSuggestions(contactMethod: 'telegram' | 'whatsapp' | 'email') {
+export function getMessageTemplateSuggestions(contactMethod: 'whatsapp' | 'email') {
   const baseTemplates = {
     greeting: {
-      telegram: ['Hi!', 'Hello!', 'Hey there!'],
       whatsapp: ['Hi!', 'Hello!', 'Hey!'],
       email: ['Hello,', 'Hi,', 'Dear Admin,']
     },
     closing: {
-      telegram: ['Thanks!', 'Thank you!', 'Cheers!'],
       whatsapp: ['Thanks!', 'Thank you!', 'Appreciate it!'],
       email: ['Thank you,', 'Best regards,', 'Sincerely,']
     }

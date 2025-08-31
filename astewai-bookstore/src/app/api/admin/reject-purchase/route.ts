@@ -54,26 +54,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send Telegram notification to user if they have a chat ID
-    if (purchase?.telegram_chat_id) {
-      try {
-        await sendTelegramNotification(
-          purchase.telegram_chat_id,
-          `❌ **Purchase Rejected**\n\n` +
-          `Unfortunately, your order **${purchase.transaction_reference}** could not be verified.\n\n` +
-          `This could be due to:\n` +
-          `• Payment not received\n` +
-          `• Incorrect amount sent\n` +
-          `• Missing transaction reference\n\n` +
-          `Please contact our support team if you believe this is an error.\n\n` +
-          `You can try purchasing again from our website.`,
-          process.env.TELEGRAM_BOT_TOKEN
-        )
-      } catch (telegramError) {
-        console.error('Failed to send Telegram notification:', telegramError)
-        // Don't fail the rejection if Telegram notification fails
-      }
-    }
+    // Note: User will be notified via email or in-app notification
 
     return NextResponse.json({ 
       success: true, 
@@ -89,26 +70,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function sendTelegramNotification(chatId: number, message: string, botToken?: string) {
-  if (!botToken) return
-
-  try {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown'
-      }),
-    })
-
-    if (!response.ok) {
-      console.error('Failed to send Telegram notification:', await response.text())
-    }
-  } catch (error) {
-    console.error('Error sending Telegram notification:', error)
-  }
-}

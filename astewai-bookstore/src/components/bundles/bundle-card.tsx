@@ -1,11 +1,11 @@
 'use client'
 
 import { useMemo } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Package, BookOpen } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { BundlePricing, DiscountBadge } from './bundle-pricing'
 import type { Bundle } from '@/types'
 import { formatPrice } from '@/utils/format'
@@ -48,40 +48,41 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
 
   return (
     <Card className={`card-enhanced hover-lift group ${className}`}>
-      <CardHeader className="pb-3 relative">
+      <CardHeader className="pb-1 p-1.5 sm:p-2.5 sm:pb-2 relative">
         {/* Bundle Cover Display */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gradient-warm shadow-soft">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-gradient-warm shadow-soft">
           {cover_image_url ? (
-            <Image
+            <OptimizedImage
               src={cover_image_url}
               alt={`${title} bundle cover`}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes="(max-width: 480px) 50vw, (max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
               priority={false}
-              onError={(e) => {
-                // Fallback to placeholder on error
-                e.currentTarget.style.display = 'none'
-              }}
             />
           ) : displayBooks.length > 0 ? (
-            <div className={`grid grid-cols-${BOOK_GRID_COLS} gap-2 h-full p-3`}>
+            <div className={`grid grid-cols-${BOOK_GRID_COLS} gap-1.5 h-full p-2`}>
               {displayBooks.map((book, index) => (
                 <div
                   key={book.id}
-                  className="relative overflow-hidden rounded-lg bg-card shadow-soft border border-border/50 transition-transform duration-300 hover:scale-105"
+                  className="relative overflow-hidden rounded-md bg-card shadow-soft border border-border/50 transition-transform duration-300 hover:scale-105"
                 >
                   {book.cover_image_url ? (
-                    <Image
+                    <OptimizedImage
                       src={book.cover_image_url}
                       alt={`Cover of ${book.title}`}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
+                      fallback={
+                        <div className="flex h-full items-center justify-center bg-gradient-accent">
+                          <BookOpen className="h-3 w-3 text-accent-foreground" />
+                        </div>
+                      }
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-accent">
-                      <BookOpen className="h-4 w-4 text-accent-foreground" />
+                      <BookOpen className="h-3 w-3 text-accent-foreground" />
                     </div>
                   )}
                 </div>
@@ -109,9 +110,9 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
         <DiscountBadge discountPercentage={discountPercentage} />
       </CardHeader>
       
-      <CardContent className="space-y-3">
-        <CardTitle className="line-clamp-2 text-lg leading-tight">
-          <Link 
+      <CardContent className="space-y-1.5 px-1.5 sm:px-2.5 py-1">
+        <CardTitle className="line-clamp-2 text-sm sm:text-base leading-tight">
+          <Link
             href={`/bundles/${id}`}
             className="hover:text-primary transition-colors"
             aria-label={`View details for ${title} bundle`}
@@ -119,20 +120,20 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
             {title}
           </Link>
         </CardTitle>
-        
+
         {description && (
-          <p className="text-muted-foreground text-sm line-clamp-2">
+          <p className="text-muted-foreground text-xs line-clamp-1 sm:line-clamp-2">
             {description}
           </p>
         )}
-        
+
         {/* Book Count */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Package className="h-4 w-4" />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Package className="h-3 w-3" />
           <span>{books.length} book{books.length !== 1 ? 's' : ''}</span>
         </div>
 
-        <BundlePricing 
+        <BundlePricing
           price={price}
           totalBookPrice={totalBookPrice}
           savings={savings}
@@ -140,15 +141,15 @@ export function BundleCard({ bundle, className }: BundleCardProps) {
         />
       </CardContent>
       
-      <CardFooter className="flex items-center justify-between pt-3">
-        <Button variant="outline" size="sm" asChild>
+      <CardFooter className="flex items-center justify-between pt-1 px-1.5 sm:px-2.5 pb-1.5 sm:pb-2">
+        <Button variant="outline" size="sm" asChild className="text-xs h-7 px-3 sm:h-8 sm:px-4">
           <Link href={`/bundles/${id}`} aria-label={`View details for ${title}`}>
-            View Details
+            View
           </Link>
         </Button>
-        
-        <Button size="sm" aria-label={`Buy ${title} bundle for ${formatPrice(price)}`}>
-          Buy Bundle
+
+        <Button size="sm" aria-label={`Buy ${title} bundle for ${formatPrice(price)}`} className="text-xs h-7 px-3 sm:h-8 sm:px-4">
+          Buy
         </Button>
       </CardFooter>
     </Card>

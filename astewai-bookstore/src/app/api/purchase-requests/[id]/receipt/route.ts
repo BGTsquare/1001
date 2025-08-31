@@ -12,7 +12,7 @@ export async function POST(
   try {
     const params = await context.params;
     const { id } = params;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

@@ -303,44 +303,73 @@
     }
   }
   
-  /* Responsive grid utilities */
+  /* Responsive grid utilities - Mobile optimized to show 2-4 cards */
   .grid-responsive-books {
     display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
-  
+
+  @media (min-width: 480px) {
+    .grid-responsive-books {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+
   @media (min-width: 640px) {
     .grid-responsive-books {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .grid-responsive-books {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 1.5rem;
     }
   }
-  
+
   @media (min-width: 1024px) {
     .grid-responsive-books {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
-  
+
   @media (min-width: 1280px) {
     .grid-responsive-books {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
   
   .grid-responsive-bundles {
     display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
-  
+
+  @media (min-width: 480px) {
+    .grid-responsive-bundles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+
   @media (min-width: 640px) {
     .grid-responsive-bundles {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
     }
   }
-  
+
+  @media (min-width: 768px) {
+    .grid-responsive-bundles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+
   @media (min-width: 1024px) {
     .grid-responsive-bundles {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -475,7 +504,7 @@
     border-color: var(--primary);
   }
 
-  /* Enhanced book and bundle cards */
+  /* Enhanced book and bundle cards - Compact version */
   .card-enhanced {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
@@ -485,6 +514,39 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     position: relative;
+    /* Reduced overall height by ~35% */
+    min-height: auto;
+  }
+
+  /* Compact card spacing optimizations */
+  .card-enhanced .card-header {
+    padding: 0.375rem 0.375rem 0.25rem 0.375rem;
+  }
+
+  @media (min-width: 640px) {
+    .card-enhanced .card-header {
+      padding: 0.625rem 0.625rem 0.5rem 0.625rem;
+    }
+  }
+
+  .card-enhanced .card-content {
+    padding: 0.25rem 0.375rem;
+  }
+
+  @media (min-width: 640px) {
+    .card-enhanced .card-content {
+      padding: 0.25rem 0.625rem;
+    }
+  }
+
+  .card-enhanced .card-footer {
+    padding: 0.25rem 0.375rem 0.375rem 0.375rem;
+  }
+
+  @media (min-width: 640px) {
+    .card-enhanced .card-footer {
+      padding: 0.25rem 0.625rem 0.5rem 0.625rem;
+    }
   }
 
   .card-enhanced::before {
@@ -507,6 +569,36 @@
 
   .card-enhanced:hover::before {
     opacity: 1;
+  }
+
+  /* Mobile-optimized card heights for better screen utilization */
+  @media (max-width: 640px) {
+    .card-enhanced {
+      /* Further height reduction on mobile for maximum visibility */
+      font-size: 0.875rem;
+    }
+
+    .card-enhanced .aspect-\[3\/4\] {
+      /* Slightly reduce aspect ratio on mobile for more content visibility */
+      aspect-ratio: 3/4.2;
+    }
+
+    .card-enhanced .aspect-\[4\/3\] {
+      /* Slightly reduce aspect ratio for bundles on mobile */
+      aspect-ratio: 4/3.2;
+    }
+  }
+
+  /* Ensure buttons remain touch-friendly despite size reduction */
+  .card-enhanced button {
+    min-height: 1.75rem;
+    touch-action: manipulation;
+  }
+
+  @media (min-width: 640px) {
+    .card-enhanced button {
+      min-height: 2rem;
+    }
   }
   
   /* Responsive typography scale */

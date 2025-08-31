@@ -3,24 +3,7 @@ import { PaymentConfigService } from '@/lib/services/payment-config-service'
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify bot authentication
-    const authHeader = request.headers.get('authorization')
-    const botSecret = process.env.TELEGRAM_BOT_SECRET
-
-    if (!authHeader || !botSecret) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    if (token !== botSecret) {
-      return NextResponse.json(
-        { error: 'Invalid bot token' },
-        { status: 401 }
-      )
-    }
+    // This endpoint is now public for manual payment system
 
     // Get payment configuration
     const paymentConfigService = new PaymentConfigService()

@@ -6,16 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { PurchaseRequest } from '@/types';
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
   MessageCircle,
   DollarSign,
   Calendar,
   User,
   Book,
-  Package
+  Package,
+  FileText,
+  Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -24,14 +26,16 @@ interface PaymentRequestCardProps {
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
   onViewDetails: () => void;
+  onViewConfirmations?: () => void;
   showCheckbox?: boolean;
 }
 
-export function PaymentRequestCard({ 
-  request, 
-  isSelected, 
-  onSelect, 
+export function PaymentRequestCard({
+  request,
+  isSelected,
+  onSelect,
   onViewDetails,
+  onViewConfirmations,
   showCheckbox = false
 }: PaymentRequestCardProps) {
   const itemName = request.book?.title || request.bundle?.title || 'Unknown Item';
@@ -70,6 +74,10 @@ export function PaymentRequestCard({
 
   const priority = getPriorityLevel(request);
 
+  // Check if request has payment confirmations
+  const hasPaymentConfirmations = request.payment_confirmation_count && request.payment_confirmation_count > 0;
+  const confirmationStatus = request.last_confirmation_status;
+
   return (
     <Card className={`transition-all hover:shadow-md ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <CardContent className="p-4">
@@ -107,6 +115,14 @@ export function PaymentRequestCard({
                     <User className="h-3 w-3" />
                     <span>Request #{request.id.slice(-8)}</span>
                   </div>
+                  {hasPaymentConfirmations && (
+                    <div className="flex items-center space-x-1">
+                      <FileText className="h-3 w-3 text-blue-500" />
+                      <span className="text-blue-600 font-medium">
+                        {request.payment_confirmation_count} file{request.payment_confirmation_count !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {request.user_message && (
@@ -141,6 +157,17 @@ export function PaymentRequestCard({
               </div>
               
               <div className="flex items-center space-x-2">
+                {hasPaymentConfirmations && onViewConfirmations && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onViewConfirmations}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    View Files ({request.payment_confirmation_count})
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"

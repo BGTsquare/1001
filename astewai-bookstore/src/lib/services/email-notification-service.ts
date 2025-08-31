@@ -5,6 +5,8 @@ export interface EmailNotificationService {
   sendPurchaseRequestNotification(request: PurchaseRequest): Promise<void>;
   sendStatusUpdateNotification(request: PurchaseRequest, previousStatus: string): Promise<void>;
   sendAdminNotification(request: PurchaseRequest): Promise<void>;
+  sendPaymentConfirmationUploadedNotification(request: PurchaseRequest, confirmationCount: number): Promise<void>;
+  sendPaymentConfirmationReceivedNotification(request: PurchaseRequest): Promise<void>;
 }
 
 export class SupabaseEmailNotificationService implements EmailNotificationService {
@@ -324,6 +326,145 @@ export class SupabaseEmailNotificationService implements EmailNotificationServic
         
         <div class="footer">
             <p>This is an automated notification from Astewai Digital Bookstore Admin System.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  async sendPaymentConfirmationUploadedNotification(request: PurchaseRequest, confirmationCount: number): Promise<void> {
+    try {
+      // Get admin email from environment or database
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@astewai.com';
+
+      const itemName = request.book?.title || request.bundle?.title || 'Unknown Item';
+      const transactionReference = `AST-${request.id.slice(-8).toUpperCase()}`;
+      const subject = `New Payment Confirmation Uploaded - ${transactionReference}`;
+
+      const htmlContent = this.generatePaymentConfirmationUploadedEmail(request, itemName, confirmationCount, transactionReference);
+
+      await this.sendEmail(adminEmail, subject, htmlContent);
+
+      console.log(`Sent payment confirmation upload notification to admin`);
+    } catch (error) {
+      console.error('Failed to send payment confirmation upload notification:', error);
+    }
+  }
+
+  async sendPaymentConfirmationReceivedNotification(request: PurchaseRequest): Promise<void> {
+    try {
+      // Get user email
+      const { data: user, error: userError } = await this.supabase.auth.admin.getUserById(request.user_id);
+
+      if (userError || !user?.user?.email) {
+        console.error('Failed to get user email for confirmation received notification:', userError);
+        return;
+      }
+
+      const itemName = request.book?.title || request.bundle?.title || 'Unknown Item';
+      const transactionReference = `AST-${request.id.slice(-8).toUpperCase()}`;
+      const subject = `Payment Confirmation Received - ${transactionReference}`;
+
+      const htmlContent = this.generatePaymentConfirmationReceivedEmail(request, itemName, transactionReference);
+
+      await this.sendEmail(user.user.email, subject, htmlContent);
+
+      console.log(`Sent payment confirmation received notification to ${user.user.email}`);
+    } catch (error) {
+      console.error('Failed to send payment confirmation received notification:', error);
+    }
+  }
+
+  private generatePaymentConfirmationUploadedEmail(request: PurchaseRequest, itemName: string, confirmationCount: number, transactionReference: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Payment Confirmation Uploaded</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 28px;">New Payment Confirmation</h1>
+        <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">A customer has uploaded payment proof</p>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #2c3e50; margin-top: 0;">Purchase Details</h2>
+
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Item:</strong> ${itemName}</p>
+                <p style="margin: 5px 0;"><strong>Amount:</strong> $${request.amount.toFixed(2)}</p>
+                <p style="margin: 5px 0;"><strong>Transaction Reference:</strong> ${transactionReference}</p>
+                <p style="margin: 5px 0;"><strong>Files Uploaded:</strong> ${confirmationCount}</p>
+                <p style="margin: 5px 0;"><strong>Request ID:</strong> ${request.id}</p>
+            </div>
+
+            <p>A customer has uploaded payment confirmation files for their purchase. Please review and approve the payment in the admin dashboard.</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/admin/payments"
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                    Review Payment Confirmations
+                </a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+            <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                This is an automated notification from Astewai Digital Bookstore
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generatePaymentConfirmationReceivedEmail(request: PurchaseRequest, itemName: string, transactionReference: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payment Confirmation Received</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 28px;">Payment Confirmation Received</h1>
+        <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">We've received your payment proof</p>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <p>Thank you for uploading your payment confirmation for <strong>${itemName}</strong>.</p>
+
+            <div style="background: #e8f5e8; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #155724;">
+                    <strong>What's next?</strong> Our team will review your payment confirmation and approve your purchase within 24 hours.
+                </p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Transaction Reference:</strong> ${transactionReference}</p>
+                <p style="margin: 5px 0;"><strong>Item:</strong> ${itemName}</p>
+                <p style="margin: 5px 0;"><strong>Amount:</strong> $${request.amount.toFixed(2)}</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL}/purchase-requests"
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                    Track Your Purchase
+                </a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+            <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                This is an automated notification from Astewai Digital Bookstore
+            </p>
         </div>
     </div>
 </body>

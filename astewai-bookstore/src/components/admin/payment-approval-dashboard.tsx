@@ -13,6 +13,7 @@ import { PaymentRequestCard } from './payment-request-card';
 import { PaymentRequestDetails } from './payment-request-details';
 import { BulkApprovalDialog } from './bulk-approval-dialog';
 import { PaymentApprovalNotifications } from './payment-approval-notifications';
+import { PaymentConfirmationViewer } from './payment-confirmation-viewer';
 import type { PurchaseRequest } from '@/types';
 import { 
   Clock, 
@@ -41,6 +42,7 @@ export function PaymentApprovalDashboard() {
   const [itemTypeFilter, setItemTypeFilter] = useState<string>('all');
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [confirmationViewerRequest, setConfirmationViewerRequest] = useState<PurchaseRequest | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch purchase requests
@@ -287,6 +289,7 @@ export function PaymentApprovalDashboard() {
                   isSelected={selectedRequests.has(request.id)}
                   onSelect={(checked) => handleSelectRequest(request.id, checked)}
                   onViewDetails={() => setSelectedRequest(request)}
+                  onViewConfirmations={() => setConfirmationViewerRequest(request)}
                   showCheckbox={request.status === 'pending'}
                 />
               ))}
@@ -340,6 +343,17 @@ export function PaymentApprovalDashboard() {
           }}
         />
       </div>
+
+      {/* Payment Confirmation Viewer Modal */}
+      <PaymentConfirmationViewer
+        purchaseRequestId={confirmationViewerRequest?.id || ''}
+        isOpen={!!confirmationViewerRequest}
+        onClose={() => setConfirmationViewerRequest(null)}
+        onStatusUpdate={(confirmationId, status, notes) => {
+          // Handle confirmation status updates if needed
+          console.log('Confirmation status update:', { confirmationId, status, notes });
+        }}
+      />
     </div>
   );
 }

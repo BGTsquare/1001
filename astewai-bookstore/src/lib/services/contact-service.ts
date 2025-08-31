@@ -173,6 +173,109 @@ export class ContactService {
   async getUserPurchaseHistory(userId: string): Promise<RepositoryResult<PurchaseRequest[]>> {
     return this.contactRepository.getPurchaseRequests(userId);
   }
+
+  /**
+   * Get purchase requests (all for admin, user-specific for regular users)
+   */
+  async getPurchaseRequests(userId?: string): Promise<PurchaseRequest[]> {
+    const result = await this.contactRepository.getPurchaseRequests(userId);
+    if (!result.success || !result.data) {
+      return [];
+    }
+    return result.data;
+  }
+
+  /**
+   * Get a specific purchase request by ID
+   */
+  async getPurchaseRequestById(requestId: string): Promise<PurchaseRequest | null> {
+    const result = await this.contactRepository.getPurchaseRequestById(requestId);
+    if (!result.success || !result.data) {
+      return null;
+    }
+    return result.data;
+  }
+
+  /**
+   * Approve a purchase request
+   */
+  async approvePurchaseRequest(requestId: string, adminNotes?: string): Promise<RepositoryResult<PurchaseRequest>> {
+    return this.updatePurchaseRequestStatus(requestId, 'approved', adminNotes);
+  }
+
+  /**
+   * Reject a purchase request
+   */
+  async rejectPurchaseRequest(requestId: string, adminNotes?: string): Promise<RepositoryResult<PurchaseRequest>> {
+    return this.updatePurchaseRequestStatus(requestId, 'rejected', adminNotes);
+  }
+
+  /**
+   * Get admin contact info for a specific admin
+   */
+  async getAdminContactInfo(adminId: string): Promise<RepositoryResult<AdminContactInfo[]>> {
+    return this.contactRepository.getAdminContactInfo(adminId);
+  }
+
+  /**
+   * Create admin contact info
+   */
+  async createAdminContactInfo(contactInfo: Omit<AdminContactInfo, 'id' | 'created_at' | 'updated_at'>): Promise<RepositoryResult<AdminContactInfo>> {
+    return this.contactRepository.createAdminContactInfo(contactInfo);
+  }
+
+  /**
+   * Update admin contact info
+   */
+  async updateAdminContactInfo(contactId: string, updates: Partial<AdminContactInfo>): Promise<RepositoryResult<AdminContactInfo>> {
+    return this.contactRepository.updateAdminContactInfo(contactId, updates);
+  }
+
+  /**
+   * Delete admin contact info
+   */
+  async deleteAdminContactInfo(contactId: string): Promise<RepositoryResult<void>> {
+    return this.contactRepository.deleteAdminContactInfo(contactId);
+  }
+
+  /**
+   * Generate a formatted message for purchase requests
+   */
+  generatePurchaseRequestMessage(request: PurchaseRequest): string {
+    const itemName = (request as any).book?.title || (request as any).bundle?.title || 'Unknown Item';
+    return `New purchase request for ${itemName} ($${request.amount.toFixed(2)})${request.user_message ? `\n\nUser message: ${request.user_message}` : ''}\n\nRequest ID: ${request.id}`;
+  }
+
+  /**
+   * Get contact methods grouped by type
+   */
+  async getContactMethodsByType(): Promise<Record<ContactMethod, AdminContactInfo[]>> {
+    const result = await this.getActiveAdminContacts();
+    const contacts = result.success && result.data ? result.data : [];
+
+    return {
+      email: contacts.filter(c => c.contact_type === 'email'),
+      telegram: contacts.filter(c => c.contact_type === 'telegram'),
+      whatsapp: contacts.filter(c => c.contact_type === 'whatsapp'),
+      phone: contacts.filter(c => c.contact_type === 'phone')
+    };
+  }
+
+  /**
+   * Get the best contact method for a user preference
+   */
+  async getBestContactMethod(preferredMethod?: ContactMethod): Promise<AdminContactInfo | null> {
+    const result = await this.getPrimaryAdminContacts();
+    const primaryContacts = result.success && result.data ? result.data : [];
+
+    if (preferredMethod) {
+      const preferred = primaryContacts.find(contact => contact.contact_type === preferredMethod);
+      if (preferred) return preferred;
+    }
+
+    // Fallback to any primary contact
+    return primaryContacts[0] || null;
+  }
 }
 
 // Export singleton instances

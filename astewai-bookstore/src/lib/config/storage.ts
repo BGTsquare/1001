@@ -57,6 +57,13 @@ export const BUCKET_CONFIGS = {
     maxFileSize: SIZES.SMALL,
     allowedMimeTypes: MIME_TYPES.IMAGES,
     description: 'Public bucket for user avatar images'
+  },
+  PAYMENT_CONFIRMATIONS: {
+    name: 'payment-confirmations',
+    isPublic: false,
+    maxFileSize: SIZES.MEDIUM,
+    allowedMimeTypes: [...MIME_TYPES.IMAGES, 'application/pdf'] as const,
+    description: 'Private bucket for payment confirmation files'
   }
 } as const satisfies Record<string, BucketConfig>
 
@@ -73,7 +80,8 @@ export const BUCKET_NAMES = {
   BOOK_COVERS: BUCKET_CONFIGS.BOOK_COVERS.name,
   BOOK_CONTENT: BUCKET_CONFIGS.BOOK_CONTENT.name,
   BLOG_IMAGES: BUCKET_CONFIGS.BLOG_IMAGES.name,
-  AVATARS: BUCKET_CONFIGS.AVATARS.name
+  AVATARS: BUCKET_CONFIGS.AVATARS.name,
+  PAYMENT_CONFIRMATIONS: BUCKET_CONFIGS.PAYMENT_CONFIRMATIONS.name
 } as const
 
 // File validation and utility functions

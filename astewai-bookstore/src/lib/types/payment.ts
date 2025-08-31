@@ -4,7 +4,7 @@
 
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded';
 
-export type PaymentMethod = 'chapa' | 'manual';
+export type PaymentMethod = 'manual';
 
 export type PaymentItemType = 'book' | 'bundle';
 
@@ -24,8 +24,7 @@ export interface PaymentRequest {
   currency: string;
   payment_method: PaymentMethod;
   status: PaymentStatus;
-  tx_ref?: string;
-  chapa_reference?: string;
+  transaction_reference?: string;
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;

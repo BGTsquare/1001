@@ -45,6 +45,9 @@ export async function register(formData: FormData) {
 
   const validatedData = registerSchema.parse(data)
 
+  // Get the site URL for email redirects
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.vercel.app'
+
   const { data: authData, error } = await supabase.auth.signUp({
     email: validatedData.email,
     password: validatedData.password,
@@ -52,6 +55,7 @@ export async function register(formData: FormData) {
       data: {
         display_name: validatedData.displayName,
       },
+      emailRedirectTo: `${siteUrl}/auth/callback`
     },
   })
 
@@ -84,7 +88,7 @@ export async function register(formData: FormData) {
     }
   }
 
-  redirect('/auth/login?message=Check your email to confirm your account')
+  redirect('/auth/login?message=Please check your email and click the confirmation link to complete your registration')
 }
 
 export async function logout() {

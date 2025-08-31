@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string, user?: User | null): Promise<void> => {
     try {
+      // First try direct Supabase query
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -98,9 +99,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (process.env.NODE_ENV === 'development') {
             console.log('Profile not found, creating default profile for user:', userId);
           }
-          await createDefaultProfile(userId, user); // Pass user to avoid re-fetch
+          await createDefaultProfile(userId, user);
           return;
         }
+
+        // If direct query fails, try API endpoint as fallback
+        console.warn('Direct profile query failed, trying API endpoint:', error.message);
+        try {
+          const response = await fetch('/api/profile');
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setProfile(result.data);
+              return;
+            }
+          }
+        } catch (apiError) {
+          console.error('API profile fetch also failed:', apiError);
+        }
+
         console.error('Error fetching profile:', error.message || error);
         return;
       }
@@ -108,6 +125,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(profile);
     } catch (error) {
       console.error('Unexpected error fetching profile:', error instanceof Error ? error.message : error);
+
+      // Try API endpoint as final fallback
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setProfile(result.data);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.error('Final API fallback failed:', apiError);
+      }
     }
   }, [supabase, createDefaultProfile]);
 
@@ -151,13 +182,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { display_name: displayName } },
+        options: {
+          data: { display_name: displayName },
+          emailRedirectTo: `${siteUrl}/auth/callback`
+        },
       });
       if (error) return { error: mapAuthError(error.message) };
-      // Profile creation is handled by the onAuthStateChange listener.
+      // Profile creation is handled by the auth callback after email confirmation
       return { success: true };
     } catch (error) {
       console.error('Unexpected error during sign up:', error);
@@ -171,8 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string): Promise<AuthResult> => {
     try {
+      // Use the configured site URL from environment variables
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${siteUrl}/auth/reset-password`,
       });
       if (error) return { error: mapAuthError(error.message) };
       return { success: true };

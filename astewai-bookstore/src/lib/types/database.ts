@@ -113,16 +113,13 @@ export interface PurchaseCreateData {
   item_id: string
   amount: number
   status?: string
-  telegram_chat_id?: number
-  telegram_user_id?: number
-  initiation_token?: string
+
   transaction_reference?: string
 }
 
 export interface PurchaseUpdateData {
   status?: string
-  telegram_chat_id?: number
-  telegram_user_id?: number
+
   transaction_reference?: string
   updated_at?: string
 }

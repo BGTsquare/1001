@@ -1,12 +1,7 @@
 import { z } from 'zod';
 
 // Contact method validation
-export const contactMethodSchema = z.enum(['telegram', 'whatsapp', 'email']);
-
-// Telegram username validation (starts with @, alphanumeric and underscores)
-const telegramSchema = z.string()
-  .min(1, 'Telegram username is required')
-  .regex(/^@[a-zA-Z0-9_]{5,32}$/, 'Invalid Telegram username format (e.g., @username)');
+export const contactMethodSchema = z.enum(['whatsapp', 'email']);
 
 // WhatsApp phone number validation (international format)
 const whatsappSchema = z.string()
@@ -75,9 +70,6 @@ export const generateContactUrl = (type: string, value: string, message?: string
   const encodedMessage = message ? encodeURIComponent(message) : '';
   
   switch (type) {
-    case 'telegram':
-      const username = value.replace('@', '');
-      return `https://t.me/${username}${message ? `?text=${encodedMessage}` : ''}`;
     case 'whatsapp':
       const phoneNumber = value.replace(/[^\d]/g, '');
       return `https://wa.me/${phoneNumber}${message ? `?text=${encodedMessage}` : ''}`;

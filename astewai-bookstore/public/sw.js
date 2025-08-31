@@ -1,10 +1,26 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'astewai-bookstore-v1'
+// Enhanced Service Worker for PWA functionality
+const CACHE_NAME = 'astewai-bookstore-v2'
+const STATIC_CACHE = 'static-v2'
+const DYNAMIC_CACHE = 'dynamic-v2'
+const IMAGE_CACHE = 'images-v2'
+
+// Critical resources to cache immediately
 const urlsToCache = [
   '/',
   '/offline',
+  '/books',
+  '/bundles',
+  '/auth/login',
   '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/icon-512x512.png',
+  '/manifest.json'
+]
+
+// Resources to cache on first access
+const dynamicCacheUrls = [
+  '/api/books',
+  '/api/bundles',
+  '/api/profile'
 ]
 
 // Install event - cache resources

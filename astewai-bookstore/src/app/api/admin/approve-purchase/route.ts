@@ -89,26 +89,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function sendTelegramNotification(chatId: number, message: string, botToken?: string) {
-  if (!botToken) return
-
-  try {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown'
-      }),
-    })
-
-    if (!response.ok) {
-      console.error('Failed to send Telegram notification:', await response.text())
-    }
-  } catch (error) {
-    console.error('Error sending Telegram notification:', error)
-  }
-}
