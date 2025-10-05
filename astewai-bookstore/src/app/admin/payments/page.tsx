@@ -1,19 +1,18 @@
-import { Metadata } from 'next';
-import { AdminLayout } from '@/components/admin/admin-layout';
-import { PaymentApprovalDashboard } from '@/components/admin/payment-approval-dashboard';
-
-export const metadata: Metadata = {
-  title: 'Payment Approvals - Admin Dashboard',
-  description: 'Manage and approve payment requests',
-};
+import { PaymentDashboard } from '@/components/admin/payment-dashboard'
 
 export default function AdminPaymentsPage() {
   return (
-    <AdminLayout 
-      title="Payment Approvals"
-      description="Review and approve payment requests from users"
-    >
-      <PaymentApprovalDashboard />
-    </AdminLayout>
-  );
+    <div className="container mx-auto py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Payment Management</h1>
+        <p className="text-muted-foreground">
+          Review and verify payment requests from customers
+        </p>
+      </div>
+      
+      <PaymentDashboard />
+    </div>
+  )
 }
+
+

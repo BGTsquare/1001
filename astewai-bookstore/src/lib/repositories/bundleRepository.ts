@@ -58,7 +58,9 @@ export async function getBundles(options: BundleSearchOptions = {}): Promise<Bun
   const { data, error } = await bundleQuery;
 
   if (error) {
-    throw new Error(`Failed to fetch bundles: ${error.message}`);
+    console.warn(`Bundles fetch error: ${error.message}`);
+    // Return empty array if database is not fully set up
+    return [];
   }
 
   const bundles = data.map(bundle => ({
@@ -77,7 +79,14 @@ export async function getBundleStats(): Promise<BundleStats> {
     .select('*', { count: 'exact', head: true });
 
   if (totalError) {
-    throw new Error(`Failed to fetch bundle stats: ${totalError.message}`);
+    console.warn(`Bundle stats fetch error: ${totalError.message}`);
+    // Return default stats if database is not fully set up
+    return {
+      total: 0,
+      featured: 0,
+      popular: 0,
+      recent: 0
+    };
   }
 
   // For now, calculate featured and popular based on total

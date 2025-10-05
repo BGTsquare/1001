@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { getAuthRedirectUrl } from '@/lib/utils/site-config'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -45,8 +46,8 @@ export async function register(formData: FormData) {
 
   const validatedData = registerSchema.parse(data)
 
-  // Get the site URL for email redirects
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://astewai-bookstore.vercel.app'
+  // Get the auth redirect URL using the utility function
+  const redirectUrl = getAuthRedirectUrl('/auth/callback')
 
   const { data: authData, error } = await supabase.auth.signUp({
     email: validatedData.email,
@@ -55,7 +56,7 @@ export async function register(formData: FormData) {
       data: {
         display_name: validatedData.displayName,
       },
-      emailRedirectTo: `${siteUrl}/auth/callback`
+      emailRedirectTo: redirectUrl
     },
   })
 
@@ -107,7 +108,7 @@ export async function resetPassword(formData: FormData) {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+    redirectTo: getAuthRedirectUrl('/auth/reset-password'),
   })
 
   if (error) {

@@ -41,11 +41,11 @@ export function BookCard({
   return (
     <Card className={`card-enhanced hover-lift group ${className}`}>
       <CardHeader className="pb-1 p-1.5 sm:p-2.5 sm:pb-2 relative">
-        <div className="image-responsive aspect-[3/4] w-full bg-gradient-warm rounded-md overflow-hidden shadow-soft">
+        <div className="relative aspect-[2/3] w-full bg-gradient-warm rounded-md overflow-hidden shadow-soft">
           <BookCoverImage
             src={cover_image_url}
             title={title}
-            className="rounded-md"
+            className="object-cover rounded-md"
           />
           {/* Subtle overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -10,6 +10,7 @@ import {
   createProfileData
 } from '@/lib/utils/profile-utils'
 import { mapAuthError } from '@/lib/auth/constants'
+import { getAuthRedirectUrl } from '@/lib/utils/site-config'
 
 /**
  * Result type for authentication operations
@@ -182,13 +183,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = getAuthRedirectUrl('/auth/callback');
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { display_name: displayName },
-          emailRedirectTo: `${siteUrl}/auth/callback`
+          emailRedirectTo: redirectUrl
         },
       });
       if (error) return { error: mapAuthError(error.message) };
@@ -206,10 +207,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string): Promise<AuthResult> => {
     try {
-      // Use the configured site URL from environment variables
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      // Use the auth redirect URL utility function
+      const redirectUrl = getAuthRedirectUrl('/auth/reset-password');
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/auth/reset-password`,
+        redirectTo: redirectUrl,
       });
       if (error) return { error: mapAuthError(error.message) };
       return { success: true };

@@ -6,6 +6,9 @@ import { BlogPost } from '@/components/blog';
 import { getBlogPostById } from '@/lib/database';
 import { getRelatedBlogPosts } from '@/lib/repositories/blogRepository';
 
+// Force dynamic rendering for this page to avoid cookies() error during build
+export const dynamic = 'force-dynamic';
+
 interface BlogPostPageProps {
   params: Promise<{
     slug: string;

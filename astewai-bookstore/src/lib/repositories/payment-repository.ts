@@ -1,516 +1,569 @@
+/**
+ * Payment Repository - New Simplified Payment System
+ */
+
 import { createClient } from '@/lib/supabase/server'
-import type { Purchase } from '@/types'
-
-export interface CreatePurchaseData {
-  user_id: string
-  item_type: 'book' | 'bundle'
-  item_id: string
-  amount: number
-  status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected' | 'pending' | 'approved'
-  transaction_reference?: string
-  payment_provider_id?: string
-  initiation_token?: string
-  telegram_chat_id?: number
-  telegram_user_id?: number
-}
-
-export interface UpdatePurchaseData {
-  status?: 'pending_initiation' | 'awaiting_payment' | 'pending_verification' | 'completed' | 'rejected' | 'pending' | 'approved'
-  transaction_reference?: string
-  payment_provider_id?: string
-  telegram_chat_id?: number
-  telegram_user_id?: number
-}
-
-// Generic result type for consistent error handling
-export interface RepositoryResult<T> {
-  success: boolean
-  data?: T
-  error?: string
-}
-
-export interface PaginatedResult<T> extends RepositoryResult<T[]> {
-  total?: number
-  page?: number
-  limit?: number
-}
+import type { 
+  PaymentRequest, 
+  PaymentRequestWithDetails,
+  CreatePaymentRequestData, 
+  UpdatePaymentRequestData,
+  PaymentVerificationLog,
+  WalletConfig,
+  AutoMatchingRule,
+  PaymentFilters,
+  PaymentSortOptions,
+  PaginationOptions,
+  PaymentListResponse,
+  PaymentStats,
+  ApiResponse
+} from '@/lib/types/payment'
 
 export class PaymentRepository {
-  private supabase: any
-  private isClient: boolean
-
-  constructor(isClient = false) {
-    this.isClient = isClient
-    if (isClient) {
-      const { createClient: createClientClient } = require('@/lib/supabase/client')
-      this.supabase = createClientClient()
-    } else {
-      // For server-side, we'll initialize lazily to avoid import issues
-      this.supabase = null
-    }
-  }
-
   private async getSupabaseClient() {
-    if (this.isClient) {
-      return this.supabase
-    } else {
-      // Always create a fresh server client to avoid stale connections
-      const { createClient } = await import('@/lib/supabase/server')
-      return await createClient()
-    }
+    return await createClient()
   }
 
   /**
-   * Create a new purchase record
+   * Create a new payment request
    */
-  async createPurchase(data: CreatePurchaseData): Promise<RepositoryResult<Purchase>> {
+  async createPaymentRequest(data: CreatePaymentRequestData & { user_id: string }): Promise<ApiResponse<PaymentRequest>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const { data: purchase, error } = await supabase
-        .from('purchases')
+      const { data: paymentRequest, error } = await supabase
+        .from('payment_requests')
         .insert({
           user_id: data.user_id,
           item_type: data.item_type,
           item_id: data.item_id,
           amount: data.amount,
-          payment_provider_id: data.payment_provider_id,
-          transaction_reference: data.transaction_reference,
-          initiation_token: data.initiation_token,
-          telegram_chat_id: data.telegram_chat_id,
-          telegram_user_id: data.telegram_user_id,
-          status: data.status || 'pending'
+          currency: data.currency || 'ETB',
+          selected_wallet_id: data.selected_wallet_id,
+          status: 'pending'
         })
         .select()
         .single()
 
       if (error) {
-        console.error('Error creating purchase:', error)
+        console.error('Error creating payment request:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase }
+      return { success: true, data: paymentRequest }
     } catch (error) {
-      console.error('Error in createPurchase:', error)
-      return { success: false, error: 'Failed to create purchase' }
+      console.error('Error in createPaymentRequest:', error)
+      return { success: false, error: 'Failed to create payment request' }
     }
   }
 
   /**
-   * Get purchase by ID
+   * Get payment request by ID with related data
    */
-  async getPurchaseById(id: string): Promise<RepositoryResult<Purchase>> {
+  async getPaymentRequestById(id: string): Promise<ApiResponse<PaymentRequestWithDetails>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .select('*')
+      const { data: paymentRequest, error } = await supabase
+        .from('payment_requests')
+        .select(`
+          *,
+          wallet_config:wallet_config(*),
+          verification_logs:payment_verification_logs(*)
+        `)
         .eq('id', id)
         .single()
 
       if (error) {
-        console.error('Error fetching purchase:', error)
+        console.error('Error fetching payment request:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase }
+      // Get item title
+      let itemTitle = 'Unknown Item'
+      if (paymentRequest.item_type === 'book') {
+        const { data: book } = await supabase
+          .from('books')
+          .select('title')
+          .eq('id', paymentRequest.item_id)
+          .single()
+        itemTitle = book?.title || 'Unknown Book'
+      } else if (paymentRequest.item_type === 'bundle') {
+        const { data: bundle } = await supabase
+          .from('bundles')
+          .select('title')
+          .eq('id', paymentRequest.item_id)
+          .single()
+        itemTitle = bundle?.title || 'Unknown Bundle'
+      }
+
+      // Get user info
+      const { data: user } = await supabase.auth.admin.getUserById(paymentRequest.user_id)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', paymentRequest.user_id)
+        .single()
+
+      const paymentRequestWithDetails: PaymentRequestWithDetails = {
+        ...paymentRequest,
+        item_title: itemTitle,
+        user_email: user.user?.email || 'Unknown',
+        user_name: profile?.display_name || 'User'
+      }
+
+      return { success: true, data: paymentRequestWithDetails }
     } catch (error) {
-      console.error('Error in getPurchaseById:', error)
-      return { success: false, error: 'Failed to fetch purchase' }
+      console.error('Error in getPaymentRequestById:', error)
+      return { success: false, error: 'Failed to fetch payment request' }
     }
   }
 
   /**
-   * Get purchases by user ID
+   * Update payment request
    */
-  async getPurchasesByUserId(userId: string): Promise<RepositoryResult<Purchase[]>> {
+  async updatePaymentRequest(id: string, data: UpdatePaymentRequestData): Promise<ApiResponse<PaymentRequest>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const { data: purchases, error } = await supabase
-        .from('purchases')
+      const updateData = {
+        ...data,
+        updated_at: new Date().toISOString()
+      }
+
+      const { data: paymentRequest, error } = await supabase
+        .from('payment_requests')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating payment request:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: paymentRequest }
+    } catch (error) {
+      console.error('Error in updatePaymentRequest:', error)
+      return { success: false, error: 'Failed to update payment request' }
+    }
+  }
+
+  /**
+   * Get payment requests with filtering, sorting, and pagination
+   */
+  async getPaymentRequests(
+    filters: PaymentFilters = {},
+    sort: PaymentSortOptions = { sort_by: 'created_at', sort_order: 'desc' },
+    pagination: PaginationOptions = { page: 1, limit: 20 }
+  ): Promise<ApiResponse<PaymentListResponse>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      const offset = (pagination.page - 1) * pagination.limit
+
+      let query = supabase
+        .from('payment_requests')
+        .select(`
+          *,
+          wallet_config:wallet_config(*)
+        `, { count: 'exact' })
+
+      // Apply filters
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status)
+      }
+
+      if (filters.wallet_type && filters.wallet_type.length > 0) {
+        query = query.in('wallet_config.wallet_type', filters.wallet_type)
+      }
+
+      if (filters.date_range) {
+        query = query
+          .gte('created_at', filters.date_range[0].toISOString())
+          .lte('created_at', filters.date_range[1].toISOString())
+      }
+
+      if (filters.amount_range) {
+        query = query
+          .gte('amount', filters.amount_range[0])
+          .lte('amount', filters.amount_range[1])
+      }
+
+      if (filters.auto_matched !== undefined) {
+        if (filters.auto_matched) {
+          query = query.not('auto_matched_at', 'is', null)
+        } else {
+          query = query.is('auto_matched_at', null)
+        }
+      }
+
+      if (filters.search_query) {
+        query = query.or(`manual_tx_id.ilike.%${filters.search_query}%,ocr_extracted_tx_id.ilike.%${filters.search_query}%`)
+      }
+
+      // Apply sorting
+      query = query.order(sort.sort_by, { ascending: sort.sort_order === 'asc' })
+
+      // Apply pagination
+      query = query.range(offset, offset + pagination.limit - 1)
+
+      const { data: paymentRequests, error, count } = await query
+
+      if (error) {
+        console.error('Error fetching payment requests:', error)
+        return { success: false, error: error.message }
+      }
+
+      // Get item titles and user info for each request
+      const paymentRequestsWithDetails = await Promise.all(
+        (paymentRequests || []).map(async (request) => {
+          let itemTitle = 'Unknown Item'
+          if (request.item_type === 'book') {
+            const { data: book } = await supabase
+              .from('books')
+              .select('title')
+              .eq('id', request.item_id)
+              .single()
+            itemTitle = book?.title || 'Unknown Book'
+          } else if (request.item_type === 'bundle') {
+            const { data: bundle } = await supabase
+              .from('bundles')
+              .select('title')
+              .eq('id', request.item_id)
+              .single()
+            itemTitle = bundle?.title || 'Unknown Bundle'
+          }
+
+          const { data: user } = await supabase.auth.admin.getUserById(request.user_id)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', request.user_id)
+            .single()
+
+          return {
+            ...request,
+            item_title: itemTitle,
+            user_email: user.user?.email || 'Unknown',
+            user_name: profile?.display_name || 'User'
+          } as PaymentRequestWithDetails
+        })
+      )
+
+      const response: PaymentListResponse = {
+        data: paymentRequestsWithDetails,
+        total: count || 0,
+        page: pagination.page,
+        limit: pagination.limit,
+        has_more: (count || 0) > offset + pagination.limit
+      }
+
+      return { success: true, data: response }
+    } catch (error) {
+      console.error('Error in getPaymentRequests:', error)
+      return { success: false, error: 'Failed to fetch payment requests' }
+    }
+  }
+
+  /**
+   * Get user's payment requests
+   */
+  async getUserPaymentRequests(userId: string, limit: number = 20): Promise<ApiResponse<PaymentRequest[]>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: paymentRequests, error } = await supabase
+        .from('payment_requests')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
+        .limit(limit)
 
       if (error) {
-        console.error('Error fetching user purchases:', error)
+        console.error('Error fetching user payment requests:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchases || [] }
+      return { success: true, data: paymentRequests || [] }
     } catch (error) {
-      console.error('Error in getPurchasesByUserId:', error)
-      return { success: false, error: 'Failed to fetch user purchases' }
+      console.error('Error in getUserPaymentRequests:', error)
+      return { success: false, error: 'Failed to fetch user payment requests' }
     }
   }
 
   /**
-   * Update purchase status and details
+   * Get active wallet configurations
    */
-  async updatePurchase(id: string, data: UpdatePurchaseData): Promise<RepositoryResult<Purchase>> {
+  async getActiveWalletConfigs(): Promise<ApiResponse<WalletConfig[]>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const updateData: any = {
-        ...data,
-        updated_at: new Date().toISOString()
-      }
-
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single()
+      const { data: wallets, error } = await supabase
+        .from('wallet_config')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
 
       if (error) {
-        console.error('Error updating purchase:', error)
+        console.error('Error fetching wallet configs:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase }
+      return { success: true, data: wallets || [] }
     } catch (error) {
-      console.error('Error in updatePurchase:', error)
-      return { success: false, error: 'Failed to update purchase' }
+      console.error('Error in getActiveWalletConfigs:', error)
+      return { success: false, error: 'Failed to fetch wallet configurations' }
     }
   }
 
   /**
-   * Update purchase with optimistic locking to prevent race conditions
+   * Get all wallet configurations (admin only)
    */
-  async updatePurchaseWithVersionCheck(
-    id: string, 
-    data: UpdatePurchaseData, 
-    expectedUpdatedAt: string
-  ): Promise<RepositoryResult<Purchase>> {
+  async getAllWalletConfigs(): Promise<ApiResponse<WalletConfig[]>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const updateData: any = {
-        ...data,
-        updated_at: new Date().toISOString()
+      const { data: wallets, error } = await supabase
+        .from('wallet_config')
+        .select('*')
+        .order('display_order', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching all wallet configs:', error)
+        return { success: false, error: error.message }
       }
 
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .update(updateData)
-        .eq('id', id)
-        .eq('updated_at', expectedUpdatedAt) // Optimistic locking
+      return { success: true, data: wallets || [] }
+    } catch (error) {
+      console.error('Error in getAllWalletConfigs:', error)
+      return { success: false, error: 'Failed to fetch wallet configurations' }
+    }
+  }
+
+  /**
+   * Get auto-matching rules
+   */
+  async getAutoMatchingRules(): Promise<ApiResponse<AutoMatchingRule[]>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: rules, error } = await supabase
+        .from('auto_matching_rules')
+        .select('*')
+        .eq('is_active', true)
+        .order('priority', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching auto-matching rules:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: rules || [] }
+    } catch (error) {
+      console.error('Error in getAutoMatchingRules:', error)
+      return { success: false, error: 'Failed to fetch auto-matching rules' }
+    }
+  }
+
+  /**
+   * Add verification log entry
+   */
+  async addVerificationLog(
+    paymentRequestId: string,
+    verificationType: string,
+    status: 'success' | 'failed' | 'pending',
+    details?: Record<string, any>,
+    errorMessage?: string,
+    processedBy?: string
+  ): Promise<ApiResponse<PaymentVerificationLog>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      const { data: log, error } = await supabase
+        .from('payment_verification_logs')
+        .insert({
+          payment_request_id: paymentRequestId,
+          verification_type: verificationType,
+          status,
+          details,
+          error_message: errorMessage,
+          processed_by: processedBy
+        })
         .select()
         .single()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return { success: false, error: 'Purchase was modified by another process. Please refresh and try again.' }
+        console.error('Error adding verification log:', error)
+        return { success: false, error: error.message }
+      }
+
+      return { success: true, data: log }
+    } catch (error) {
+      console.error('Error in addVerificationLog:', error)
+      return { success: false, error: 'Failed to add verification log' }
+    }
+  }
+
+  /**
+   * Get payment statistics
+   */
+  async getPaymentStats(): Promise<ApiResponse<PaymentStats>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      
+      // Get basic counts
+      const { data: statusCounts, error: statusError } = await supabase
+        .from('payment_requests')
+        .select('status')
+
+      if (statusError) {
+        console.error('Error fetching status counts:', statusError)
+        return { success: false, error: statusError.message }
+      }
+
+      const counts = statusCounts?.reduce((acc, request) => {
+        acc[request.status] = (acc[request.status] || 0) + 1
+        return acc
+      }, {} as Record<string, number>) || {}
+
+      // Get auto-matched count
+      const { count: autoMatchedCount, error: autoMatchedError } = await supabase
+        .from('payment_requests')
+        .select('*', { count: 'exact', head: true })
+        .not('auto_matched_at', 'is', null)
+
+      if (autoMatchedError) {
+        console.error('Error fetching auto-matched count:', autoMatchedError)
+        return { success: false, error: autoMatchedError.message }
+      }
+
+      // Get manual verified count
+      const { count: manualVerifiedCount, error: manualVerifiedError } = await supabase
+        .from('payment_requests')
+        .select('*', { count: 'exact', head: true })
+        .not('admin_verified_at', 'is', null)
+
+      if (manualVerifiedError) {
+        console.error('Error fetching manual verified count:', manualVerifiedError)
+        return { success: false, error: manualVerifiedError.message }
+      }
+
+      // Get total amount
+      const { data: amountData, error: amountError } = await supabase
+        .from('payment_requests')
+        .select('amount')
+        .eq('status', 'completed')
+
+      if (amountError) {
+        console.error('Error fetching total amount:', amountError)
+        return { success: false, error: amountError.message }
+      }
+
+      const totalAmount = amountData?.reduce((sum, request) => sum + request.amount, 0) || 0
+
+      // Calculate average processing time (simplified)
+      const { data: completedRequests, error: completedError } = await supabase
+        .from('payment_requests')
+        .select('created_at, admin_verified_at, auto_matched_at')
+        .eq('status', 'completed')
+        .limit(100) // Sample for performance
+
+      let averageProcessingTimeHours = 0
+      if (completedRequests && completedRequests.length > 0) {
+        const processingTimes = completedRequests
+          .map(request => {
+            const completedAt = request.admin_verified_at || request.auto_matched_at
+            if (completedAt) {
+              const start = new Date(request.created_at).getTime()
+              const end = new Date(completedAt).getTime()
+              return (end - start) / (1000 * 60 * 60) // Convert to hours
+            }
+            return 0
+          })
+          .filter(time => time > 0)
+
+        if (processingTimes.length > 0) {
+          averageProcessingTimeHours = processingTimes.reduce((sum, time) => sum + time, 0) / processingTimes.length
         }
-        console.error('Error updating purchase with version check:', error)
-        return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase }
+      const stats: PaymentStats = {
+        total_requests: Object.values(counts).reduce((sum, count) => sum + count, 0),
+        pending_requests: counts.pending || 0,
+        completed_requests: counts.completed || 0,
+        failed_requests: counts.failed || 0,
+        auto_matched_requests: autoMatchedCount || 0,
+        manual_verified_requests: manualVerifiedCount || 0,
+        total_amount: totalAmount,
+        average_processing_time_hours: averageProcessingTimeHours
+      }
+
+      return { success: true, data: stats }
     } catch (error) {
-      console.error('Error in updatePurchaseWithVersionCheck:', error)
-      return { success: false, error: 'Failed to update purchase' }
+      console.error('Error in getPaymentStats:', error)
+      return { success: false, error: 'Failed to fetch payment statistics' }
     }
   }
 
   /**
-   * Check if user has existing purchase for item
+   * Check if user has existing payment request for item
    */
-  async hasExistingPurchase(userId: string, itemType: 'book' | 'bundle', itemId: string): Promise<RepositoryResult<Purchase | null>> {
+  async hasExistingPaymentRequest(
+    userId: string, 
+    itemType: 'book' | 'bundle', 
+    itemId: string
+  ): Promise<ApiResponse<PaymentRequest | null>> {
     try {
       const supabase = await this.getSupabaseClient()
       
-      const { data: purchase, error } = await supabase
-        .from('purchases')
+      const { data: paymentRequest, error } = await supabase
+        .from('payment_requests')
         .select('*')
         .eq('user_id', userId)
         .eq('item_type', itemType)
         .eq('item_id', itemId)
-        .in('status', ['pending', 'pending_initiation', 'awaiting_payment', 'pending_verification', 'completed'])
+        .in('status', ['pending', 'payment_initiated', 'payment_verified'])
         .single()
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        console.error('Error checking existing purchase:', error)
+        console.error('Error checking existing payment request:', error)
         return { success: false, error: error.message }
       }
 
-      return { success: true, data: purchase || null }
+      return { success: true, data: paymentRequest || null }
     } catch (error) {
-      console.error('Error in hasExistingPurchase:', error)
-      return { success: false, error: 'Failed to check existing purchase' }
+      console.error('Error in hasExistingPaymentRequest:', error)
+      return { success: false, error: 'Failed to check existing payment request' }
     }
   }
 
   /**
-   * Get purchase by payment provider ID
+   * Delete payment request (admin only)
    */
-  async getPurchaseByProviderId(providerId: string): Promise<RepositoryResult<Purchase>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('payment_provider_id', providerId)
-        .single()
-
-      if (error) {
-        console.error('Error fetching purchase by provider ID:', error)
-        return { success: false, error: error.message }
-      }
-
-      return { success: true, data: purchase }
-    } catch (error) {
-      console.error('Error in getPurchaseByProviderId:', error)
-      return { success: false, error: 'Failed to fetch purchase by provider ID' }
-    }
-  }
-
-  /**
-   * Get purchase by transaction reference (for manual payment tracking)
-   */
-  async getPurchaseByTransactionReference(transactionReference: string): Promise<RepositoryResult<Purchase>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('transaction_reference', transactionReference)
-        .single()
-
-      if (error) {
-        console.error('Error fetching purchase by transaction reference:', error)
-        return { success: false, error: error.message }
-      }
-
-      return { success: true, data: purchase }
-    } catch (error) {
-      console.error('Error in getPurchaseByTransactionReference:', error)
-      return { success: false, error: 'Failed to fetch purchase by transaction reference' }
-    }
-  }
-
-  /**
-   * Find purchase by initiation token (for Telegram bot)
-   */
-  async findPurchaseByToken(token: string): Promise<RepositoryResult<Purchase>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('initiation_token', token)
-        .single()
-
-      if (error) {
-        console.error('Error fetching purchase by token:', error)
-        return { success: false, error: error.message }
-      }
-
-      return { success: true, data: purchase }
-    } catch (error) {
-      console.error('Error in findPurchaseByToken:', error)
-      return { success: false, error: 'Failed to fetch purchase by token' }
-    }
-  }
-
-  /**
-   * Get user by ID (for Telegram bot responses)
-   */
-  async getUserById(userId: string): Promise<RepositoryResult<{ email: string, display_name?: string }>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      // Get user from auth.users and profile
-      const { data: user, error: userError } = await supabase.auth.admin.getUserById(userId)
-      
-      if (userError) {
-        console.error('Error fetching user:', userError)
-        return { success: false, error: userError.message }
-      }
-
-      // Get profile for display name
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', userId)
-        .single()
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError)
-      }
-
-      return { 
-        success: true, 
-        data: { 
-          email: user.user?.email || 'Unknown',
-          display_name: profile?.display_name 
-        } 
-      }
-    } catch (error) {
-      console.error('Error in getUserById:', error)
-      return { success: false, error: 'Failed to fetch user' }
-    }
-  }
-
-  /**
-   * Get all purchases with pagination (admin use)
-   */
-  async getAllPurchases(page: number = 1, limit: number = 20): Promise<PaginatedResult<Purchase>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      const offset = (page - 1) * limit
-
-      // Get total count
-      const { count, error: countError } = await supabase
-        .from('purchases')
-        .select('*', { count: 'exact', head: true })
-
-      if (countError) {
-        console.error('Error counting purchases:', countError)
-        return { success: false, error: countError.message }
-      }
-
-      // Get purchases with pagination
-      const { data: purchases, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1)
-
-      if (error) {
-        console.error('Error fetching all purchases:', error)
-        return { success: false, error: error.message }
-      }
-
-      return { 
-        success: true, 
-        data: purchases || [], 
-        total: count || 0,
-        page,
-        limit
-      }
-    } catch (error) {
-      console.error('Error in getAllPurchases:', error)
-      return { success: false, error: 'Failed to fetch all purchases' }
-    }
-  }
-
-  /**
-   * Get purchases by status with pagination
-   */
-  async getPurchasesByStatus(
-    status: 'pending' | 'approved' | 'rejected' | 'completed',
-    page: number = 1,
-    limit: number = 20
-  ): Promise<PaginatedResult<Purchase>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      const offset = (page - 1) * limit
-
-      // Get total count
-      const { count, error: countError } = await supabase
-        .from('purchases')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', status)
-
-      if (countError) {
-        console.error('Error counting purchases by status:', countError)
-        return { success: false, error: countError.message }
-      }
-
-      // Get purchases with pagination
-      const { data: purchases, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('status', status)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1)
-
-      if (error) {
-        console.error('Error fetching purchases by status:', error)
-        return { success: false, error: error.message }
-      }
-
-      return { 
-        success: true, 
-        data: purchases || [], 
-        total: count || 0,
-        page,
-        limit
-      }
-    } catch (error) {
-      console.error('Error in getPurchasesByStatus:', error)
-      return { success: false, error: 'Failed to fetch purchases by status' }
-    }
-  }
-
-  /**
-   * Get purchase count by status (for admin dashboard)
-   */
-  async getPurchaseCountByStatus(): Promise<RepositoryResult<Record<string, number>>> {
-    try {
-      const supabase = await this.getSupabaseClient()
-      
-      const { data: purchases, error } = await supabase
-        .from('purchases')
-        .select('status')
-
-      if (error) {
-        console.error('Error fetching purchase counts:', error)
-        return { success: false, error: error.message }
-      }
-
-      const counts = purchases?.reduce((acc, purchase) => {
-        acc[purchase.status] = (acc[purchase.status] || 0) + 1
-        return acc
-      }, {} as Record<string, number>) || {}
-
-      return { success: true, data: counts }
-    } catch (error) {
-      console.error('Error in getPurchaseCountByStatus:', error)
-      return { success: false, error: 'Failed to fetch purchase counts' }
-    }
-  }
-
-  /**
-   * Check if purchase exists by ID
-   */
-  async exists(id: string): Promise<boolean> {
-    const result = await this.getPurchaseById(id)
-    return result.success && !!result.data
-  }
-
-  /**
-   * Delete a purchase (admin only - use with caution)
-   */
-  async deletePurchase(id: string): Promise<RepositoryResult<boolean>> {
+  async deletePaymentRequest(id: string): Promise<ApiResponse<boolean>> {
     try {
       const supabase = await this.getSupabaseClient()
       
       const { error } = await supabase
-        .from('purchases')
+        .from('payment_requests')
         .delete()
         .eq('id', id)
 
       if (error) {
-        console.error('Error deleting purchase:', error)
+        console.error('Error deleting payment request:', error)
         return { success: false, error: error.message }
       }
 
       return { success: true, data: true }
     } catch (error) {
-      console.error('Error in deletePurchase:', error)
-      return { success: false, error: 'Failed to delete purchase' }
+      console.error('Error in deletePaymentRequest:', error)
+      return { success: false, error: 'Failed to delete payment request' }
     }
   }
 }
 
-// Export singleton instances for convenience
+// Export singleton instance
 export const paymentRepository = new PaymentRepository()
-export const clientPaymentRepository = new PaymentRepository(true)
+
+

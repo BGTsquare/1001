@@ -72,7 +72,7 @@ export function OptimizedImage({
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full min-h-[200px]">
       {/* Loading placeholder */}
       {isLoading && (
         <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 animate-pulse ${className}`}>
@@ -91,7 +91,6 @@ export function OptimizedImage({
         onError={handleError}
         onLoad={handleLoad}
         unoptimized={true} // Disable optimization for problematic Supabase images
-        onLoadingComplete={() => setIsLoading(false)}
       />
     </div>
   )

@@ -106,6 +106,25 @@ supabase db dump --data-only > data.sql
 3. Deploy to staging/production with `supabase db push`
 4. Update TypeScript types if needed
 
+## Applying the consolidated schema
+
+We ship a single consolidated schema at `supabase/complete_schema.sql` which replaces older migrations.
+
+1. Ensure your `.env.local` has `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set.
+2. Run the SQL in Supabase SQL editor or use the CLI:
+
+   - Using Supabase UI: open SQL editor and paste `supabase/complete_schema.sql` then run.
+   - Using CLI: `supabase db push --file supabase/complete_schema.sql` (or split into migrations as preferred).
+
+## Creating the initial admin user
+
+We provide a script to create/promote the default admin using the service role key:
+
+1. Fill `.env.local` with `ADMIN_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`.
+2. Run: `node scripts/create-default-admin.js`
+
+This script is idempotent and will create the user if missing and upsert a `profiles` row with `role = 'admin'`.
+
 ## Useful Commands
 
 ```bash

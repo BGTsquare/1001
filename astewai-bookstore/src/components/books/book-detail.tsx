@@ -52,13 +52,13 @@ export function BookDetail({ book }: BookDetailProps) {
           <Card>
             <CardContent className="p-6">
               {/* Book Cover */}
-              <div className="relative aspect-[3/4] w-full mb-6 overflow-hidden rounded-lg bg-muted">
+              <div className="relative aspect-[2/3] w-full mb-6 overflow-hidden rounded-lg bg-muted">
                 {cover_image_url ? (
                   <OptimizedImage
                     src={cover_image_url}
                     alt={`Cover of ${title}`}
                     fill
-                    className="object-cover"
+                    className="object-cover rounded-md"
                     sizes="(max-width: 768px) 100vw, 33vw"
                     priority
                     fallback={

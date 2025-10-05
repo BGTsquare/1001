@@ -1,6 +1,33 @@
-# Astewai Digital Bookstore
+# 📚 Astewai Digital Bookstore
 
-A modern full-stack digital bookstore platform built with Next.js 14, TypeScript, and Supabase.
+> **Production-Ready Digital Bookstore for Ethiopian Market**
+
+A modern, full-featured digital bookstore built with Next.js, Supabase, and Tailwind CSS. Features manual payment confirmation system optimized for Ethiopian banking, comprehensive admin panel, and PWA support.
+
+## 🚀 Quick Start
+
+**For Fresh Setup**: Use the comprehensive migration approach for production-ready deployment:
+
+1. **Follow the Setup Guide**: See `FRESH_SUPABASE_SETUP_GUIDE.md` for complete instructions
+2. **Apply Database Migration**: Use `FRESH_SUPABASE_MIGRATION.sql` for fresh Supabase project
+3. **Configure Environment**: Update `.env.local` with your Supabase credentials
+4. **Deploy**: Ready for production deployment on Vercel
+
+## 📁 Project Structure
+
+```
+astewai-bookstore/
+├── FRESH_SUPABASE_MIGRATION.sql    # Complete database migration
+├── FRESH_SUPABASE_SETUP_GUIDE.md   # Production setup guide
+├── PROJECT_CLEANUP_SUMMARY.md      # Cleanup documentation
+├── .env.local                       # Environment configuration
+├── src/                            # Application source code
+├── scripts/                        # Utility scripts
+│   ├── diagnose-production-issues.js
+│   ├── test-rpc-functions.js
+│   └── make-admin.js
+└── supabase/                       # Supabase configuration
+```
 
 ## Features
 

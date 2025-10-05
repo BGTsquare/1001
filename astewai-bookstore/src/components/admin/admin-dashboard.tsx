@@ -24,7 +24,7 @@ import { ContactPurchaseManager } from './contact-purchase-manager'
 import { MediaManager } from './media-manager'
 import { UserManager } from './user-manager'
 import { AnalyticsDashboard } from './analytics-dashboard'
-import { PaymentApprovalDashboard } from './payment-approval-dashboard'
+import { PaymentDashboard } from './payment-dashboard'
 import { AdminSetup } from './admin-setup'
 import { BlogManager } from './blog-manager'
 import { StorageManager } from './storage-manager'
@@ -305,7 +305,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
         {/* Payment Approval Section */}
         {selectedSection === 'payments' && (
           <div>
-            <PaymentApprovalDashboard />
+            <PaymentDashboard />
           </div>
         )}
 

@@ -4,7 +4,7 @@ import { StructuredData } from '@/components/seo/structured-data';
 import { BlogList } from '@/components/blog';
 import { getBlogPosts } from '@/lib/database';
 
-// Force dynamic rendering for this page
+// Force dynamic rendering for this page to avoid cookies() error during build
 export const dynamic = 'force-dynamic';
 
 export const metadata = generateMetadata({
