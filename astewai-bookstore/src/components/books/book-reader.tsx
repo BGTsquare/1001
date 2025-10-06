@@ -22,6 +22,9 @@ import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/contexts/auth-context'
 import type { Book, UserLibrary, ReadingPreferences } from '@/types'
 import { toast } from 'sonner'
+import dynamic from 'next/dynamic'
+
+const PdfViewer = dynamic(() => import('./pdf-viewer'), { ssr: false })
 
 interface BookReaderProps {
   book: Book
@@ -55,6 +58,7 @@ export function BookReader({
   const [isLoading, setIsLoading] = useState(true)
   const [content, setContent] = useState<string>('')
   const [contentFormat, setContentFormat] = useState<string>('text')
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [currentProgress, setCurrentProgress] = useState(libraryItem.progress || 0)
   const [showSettings, setShowSettings] = useState(false)
   const [showBookmarks, setShowBookmarks] = useState(false)
@@ -62,11 +66,14 @@ export function BookReader({
   const [isFullscreen, setIsFullscreen] = useState(false)
   
   // Reader settings with defaults
+  // Safe defaults for reader settings. `user` may not have `reading_preferences` typed on it,
+  // so access it defensively.
+  const userPreferences = (user && (user as any).reading_preferences) || {}
   const [settings, setSettings] = useState<ReaderSettings>({
     fontSize: 'medium',
     theme: 'light',
     fontFamily: 'serif',
-    ...(user?.reading_preferences as ReadingPreferences || {})
+    ...(userPreferences as ReadingPreferences)
   })
 
   // Load book content
@@ -79,15 +86,56 @@ export function BookReader({
 
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/books/${book.id}/content`)
+  const response = await fetch(`/api/books/${book.id}/content`, { credentials: 'include' })
         
         if (!response.ok) {
-          throw new Error('Failed to load book content')
+          // Try to read error body for better diagnostics
+          let errBody: any = null
+          try {
+            errBody = await response.json()
+          } catch (e) {
+            try {
+              errBody = await response.text()
+            } catch { /* ignore */ }
+          }
+
+          // If unauthorized, send user to login preserving redirect
+          if (response.status === 401) {
+            redirect('/auth/login?redirect=/books/' + book.id + '/read')
+            return
+          }
+
+          const message = errBody?.error || errBody || 'Failed to load book content'
+          throw new Error(message)
         }
 
         const data = await response.json()
         setContent(data.content || '')
         setContentFormat(data.contentFormat || 'text')
+
+        // If the server indicates a PDF, prepare an object URL using the download endpoint
+        if (data.contentFormat === 'pdf') {
+          try {
+            // Fetch the actual PDF bytes from the download endpoint (include credentials)
+            const downloadResp = await fetch(`/api/books/${book.id}/download`, { credentials: 'include' })
+            if (downloadResp.ok) {
+              const blob = await downloadResp.blob()
+              const objUrl = URL.createObjectURL(blob)
+              // Revoke previous URL if present
+              setPdfUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev)
+                return objUrl
+              })
+            } else {
+              // Log diagnostic information
+              let dbg: any = null
+              try { dbg = await downloadResp.json() } catch { try { dbg = await downloadResp.text() } catch {} }
+              console.warn('Failed to fetch PDF for inline viewing', downloadResp.status, dbg)
+            }
+          } catch (err) {
+            console.error('Error fetching PDF blob:', err)
+          }
+        }
         
         // Restore reading position if available (only for text content)
         if (libraryItem.last_read_position && data.contentFormat === 'text') {
@@ -105,6 +153,13 @@ export function BookReader({
 
     loadContent()
   }, [book.id, book.content_url, libraryItem.last_read_position])
+
+  // Cleanup object URLs when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl)
+    }
+  }, [pdfUrl])
 
   // Auto-save reading progress (only for text content)
   useEffect(() => {
@@ -555,8 +610,13 @@ export function BookReader({
           >
             {content ? (
               <div className="px-4 py-6">
-                {contentFormat === 'pdf' || contentFormat === 'epub' ? (
-                  // For PDF/EPUB files, show download notice
+                {contentFormat === 'pdf' ? (
+                  // Render inline PDF viewer for PDFs
+                  <div className="h-[70vh]">
+                    <PdfViewer pdfUrl={pdfUrl} fallbackDownloadUrl={`/api/books/${book.id}/download`} />
+                  </div>
+                ) : contentFormat === 'epub' ? (
+                  // For EPUB files, show download notice (epub inline viewer not implemented)
                   <div 
                     className="prose prose-sm sm:prose-lg max-w-none prose-headings:text-mobile-lg sm:prose-headings:text-xl prose-p:text-mobile-base sm:prose-p:text-base prose-p:leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: content }}

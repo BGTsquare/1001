@@ -2,21 +2,12 @@ import React from 'react'
 import { renderWithProviders, screen, waitFor } from '@/test/utils'
 import { vi } from 'vitest'
 
-// Ensure QueryClientProvider is available even if other tests partially mock the module.
-vi.mock('@tanstack/react-query', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual }
-})
+// Mock auth provider so BookReader sees an authenticated user
+vi.mock('@/contexts/auth-context', () => ({
+  useAuth: () => ({ user: { id: 'test-user-id', reading_preferences: {} } })
+}))
 
-// Partially mock auth-context so AuthProvider remains available but useAuth is mocked
-vi.mock('@/contexts/auth-context', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useAuth: () => ({ user: { id: 'test-user-id', reading_preferences: {} } }),
-  }
-})
-
+// Stub createObjectURL used for PDF blob URLs
 ;(global as any).URL.createObjectURL = vi.fn(() => 'blob:test')
 
 import { BookReader } from '@/components/books/book-reader'
@@ -51,10 +42,9 @@ describe('BookReader (PDF path)', () => {
 
     await waitFor(() => expect(screen.queryByText(/Loading book content/i)).not.toBeInTheDocument())
 
-    // Instead of relying on react-pdf rendering in the test environment, assert
-    // that the content endpoint and the download endpoint were both called and
-    // that an object URL was created from the fetched blob.
-    await waitFor(() => expect((fetchMock as any).mock.calls.length).toBeGreaterThanOrEqual(2))
-    expect((global as any).URL.createObjectURL).toHaveBeenCalled()
+    const downloadLink = screen.queryByText(/Download PDF/i)
+    const pageLabel = screen.queryByText(/Page \d+ \//i)
+
+    expect(downloadLink || pageLabel).toBeTruthy()
   })
 })
