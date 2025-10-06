@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { APP_NAME } from '@/utils/constants';
+import { APP_NAME, ROUTES } from '@/utils/constants';
 
 export function Footer() {
   return (
@@ -23,7 +23,7 @@ export function Footer() {
             <ul className="space-mobile-tight text-mobile-sm" role="list">
               <li>
                 <Link
-                  href="/books"
+                  href={ROUTES.BOOKS}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   All Books
@@ -31,7 +31,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/bundles"
+                  href={ROUTES.BUNDLES}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Book Bundles
@@ -39,7 +39,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/blog"
+                  href={ROUTES.BLOG}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Blog
@@ -53,7 +53,7 @@ export function Footer() {
             <ul className="space-mobile-tight text-mobile-sm" role="list">
               <li>
                 <Link
-                  href="/library"
+                  href={ROUTES.LIBRARY}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   My Library
@@ -61,7 +61,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/auth/login"
+                  href={ROUTES.AUTH.LOGIN}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Sign In
@@ -69,7 +69,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/auth/register"
+                  href={ROUTES.AUTH.REGISTER}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Sign Up
@@ -83,7 +83,7 @@ export function Footer() {
             <ul className="space-mobile-tight text-mobile-sm" role="list">
               <li>
                 <Link
-                  href="/help"
+                  href={ROUTES.HELP}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Help Center
@@ -91,7 +91,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/faq"
+                  href={ROUTES.FAQ}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   FAQ
@@ -99,7 +99,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/contact"
+                  href={ROUTES.CONTACT}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Contact Us
@@ -113,7 +113,7 @@ export function Footer() {
             <ul className="space-mobile-tight text-mobile-sm" role="list">
               <li>
                 <Link
-                  href="/about"
+                  href={ROUTES.ABOUT}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   About Us
@@ -121,7 +121,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/terms"
+                  href={ROUTES.TERMS}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Terms of Service
@@ -129,7 +129,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/privacy"
+                  href={ROUTES.PRIVACY}
                   className="text-muted-foreground hover:text-foreground touch-target inline-block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1 py-0.5"
                 >
                   Privacy Policy

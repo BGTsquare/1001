@@ -11,6 +11,11 @@ export const ROUTES = {
   LIBRARY: '/library',
   BLOG: '/blog',
   CONTACT: '/contact',
+  ABOUT: '/about',
+  HELP: '/help',
+  FAQ: '/faq',
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
   PROFILE: '/profile',
   AUTH: {
     LOGIN: '/auth/login',

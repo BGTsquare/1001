@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { ROUTES } from '@/utils/constants'
 
 export default function PromoteAdminPage() {
   const { user, profile } = useAuth()
@@ -81,7 +82,7 @@ export default function PromoteAdminPage() {
           {profile?.role === 'admin' ? (
             <div className="space-y-4">
               <p className="text-green-600">✅ You are already an admin!</p>
-              <Link href="/admin">
+              <Link href={ROUTES.ADMIN.DASHBOARD}>
                 <Button>Go to Admin Dashboard</Button>
               </Link>
             </div>
@@ -115,7 +116,7 @@ export default function PromoteAdminPage() {
           )}
 
           <div className="pt-4 border-t">
-            <Link href="/">
+            <Link href={ROUTES.HOME}>
               <Button variant="outline" className="w-full">
                 Back to Home
               </Button>
