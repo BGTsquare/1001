@@ -29,6 +29,30 @@ try {
   pdfjs.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js'
 }
 
+// If the worker fails to load (e.g., 404 on production), attempt to fallback to
+// the published worker on unpkg for the installed pdfjs-dist version. We use
+// the NEXT_PUBLIC_PDFJS_VERSION environment variable set at build time.
+if (typeof window !== 'undefined') {
+  const testWorker = async () => {
+    const url = `${location.origin}/pdfjs/pdf.worker.min.js`
+    try {
+      const res = await fetch(url, { method: 'HEAD' })
+      if (!res.ok) {
+        const v = (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
+        if (v) {
+          // Use unpkg CDN as a fallback
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${v}/build/pdf.worker.min.js`
+        }
+      }
+    } catch (e) {
+      // network failure - nothing else to do
+    }
+  }
+  void testWorker()
+}
+
 interface PdfViewerProps {
   pdfUrl: string | null
   fallbackDownloadUrl?: string

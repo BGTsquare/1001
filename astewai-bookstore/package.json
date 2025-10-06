@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
+  "prebuild": "node ./scripts/copy-pdf-worker.js",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

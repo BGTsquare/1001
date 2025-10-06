@@ -117,3 +117,12 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+
+// Expose pdfjs-dist version to client so we can fallback to CDN worker when needed
+try {
+  const pdfjsPkg = require('pdfjs-dist/package.json')
+  if (!nextConfig.env) nextConfig.env = {}
+  nextConfig.env.NEXT_PUBLIC_PDFJS_VERSION = pdfjsPkg.version
+} catch (e) {
+  // ignore if package not present at build time
+}
