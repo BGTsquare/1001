@@ -18,7 +18,6 @@ import { AdminNavigation } from './admin-navigation'
 import { BookManager } from './book-manager'
 import { BookApproval } from './book-approval'
 import { BundleManager } from './bundle-manager'
-import { AdminContactManager } from '../contact/admin-contact-manager'
 import { PurchaseRequestManager } from '../contact/purchase-request-manager'
 import { ContactPurchaseManager } from './contact-purchase-manager'
 import { MediaManager } from './media-manager'
@@ -28,6 +27,7 @@ import { PaymentDashboard } from './payment-dashboard'
 import { AdminSetup } from './admin-setup'
 import { BlogManager } from './blog-manager'
 import { StorageManager } from './storage-manager'
+import { WalletsPage } from './wallets-page'
 
 interface DashboardStats {
   totalBooks: number
@@ -313,6 +313,13 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
         {selectedSection === 'analytics' && (
           <div>
             <AnalyticsDashboard />
+          </div>
+        )}
+
+        {/* Wallet Configurations Section */}
+        {selectedSection === 'wallets' && (
+          <div>
+            <WalletsPage />
           </div>
         )}
 

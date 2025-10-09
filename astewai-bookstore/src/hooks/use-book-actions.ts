@@ -60,34 +60,12 @@ export function useBookActions({ book, onOwnershipChange }: UseBookActionsProps)
       router.push(`/auth/login?redirect=/books/${book.id}`)
       return
     }
-
+    // Redirect users to the dedicated payment page where they can choose a method
+    // and upload verification. The server-side purchase workflow will be handled
+    // after verification by admin.
     setIsPurchasing(true)
-    
     try {
-      const response = await fetch('/api/purchases/simple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemType: 'book',
-          itemId: book.id,
-          amount: book.price,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create purchase request')
-      }
-
-      // Show success message and redirect to payment instructions
-      toast.success('Purchase request created! Redirecting to payment instructions...')
-      router.push(`/payment-instructions?purchaseId=${result.data.purchaseId}`)
-    } catch (error) {
-      console.error('Error initiating purchase:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to initiate purchase')
+      router.push(`/books/${book.id}/payment`)
     } finally {
       setIsPurchasing(false)
     }

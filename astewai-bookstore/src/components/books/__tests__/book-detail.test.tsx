@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { BookDetail } from '../book-detail'
+import { formatPrice } from '@/utils/format'
 import type { Book } from '@/types'
 
 // Mock the child components
@@ -76,8 +77,9 @@ describe('BookDetail', () => {
     expect(screen.getByText('by Test Author')).toBeInTheDocument()
     expect(screen.getByText('This is a test book description.')).toBeInTheDocument()
     expect(screen.getByText('It has multiple paragraphs.')).toBeInTheDocument()
-    expect(screen.getByText('$19.99')).toBeInTheDocument()
-    expect(screen.getByText('Fiction')).toBeInTheDocument()
+    expect(screen.getByText(formatPrice(mockBook.price))).toBeInTheDocument()
+    // Category may appear in multiple places (metadata + details), assert presence
+    expect(screen.getAllByText('Fiction').length).toBeGreaterThan(0)
   })
 
   it('displays tags correctly', () => {
@@ -91,8 +93,10 @@ describe('BookDetail', () => {
   it('shows free pricing for free books', () => {
     render(<BookDetail book={mockFreeBook} />)
     
-    expect(screen.getByText('Free')).toBeInTheDocument()
-    expect(screen.queryByText('$')).not.toBeInTheDocument()
+    // 'Free' may appear in multiple places (pricing and details)
+    expect(screen.getAllByText('Free').length).toBeGreaterThan(0)
+    // Ensure no formatted price is shown for free books
+    expect(screen.queryByText(formatPrice(mockFreeBook.price))).not.toBeInTheDocument()
   })
 
   it('displays book cover image when available', () => {
@@ -112,21 +116,21 @@ describe('BookDetail', () => {
 
   it('shows preview button when content is available', () => {
     render(<BookDetail book={mockBook} />)
-    
-    expect(screen.getByText('Preview Book')).toBeInTheDocument()
+    const previewButtons = screen.getAllByRole('button', { name: /Preview Book/i })
+    expect(previewButtons.length).toBeGreaterThan(0)
   })
 
   it('hides preview button when no content available', () => {
     const bookWithoutContent = { ...mockBook, content_url: null }
     render(<BookDetail book={bookWithoutContent} />)
-    
-    expect(screen.queryByText('Preview Book')).not.toBeInTheDocument()
+    const previewButtons = screen.queryAllByRole('button', { name: /Preview Book/i })
+    expect(previewButtons.length).toBe(0)
   })
 
   it('opens preview modal when preview button is clicked', async () => {
     render(<BookDetail book={mockBook} />)
-    
-    const previewButton = screen.getByText('Preview Book')
+    const previewButtons = screen.getAllByRole('button', { name: /Preview Book/i })
+    const previewButton = previewButtons[0]
     fireEvent.click(previewButton)
     
     await waitFor(() => {
@@ -139,7 +143,8 @@ describe('BookDetail', () => {
     render(<BookDetail book={mockBook} />)
     
     // Open preview
-    const previewButton = screen.getByText('Preview Book')
+    const previewButtons = screen.getAllByRole('button', { name: /Preview Book/i })
+    const previewButton = previewButtons[0]
     fireEvent.click(previewButton)
     
     await waitFor(() => {
@@ -158,7 +163,7 @@ describe('BookDetail', () => {
   it('opens share modal when share button is clicked', async () => {
     render(<BookDetail book={mockBook} />)
     
-    const shareButton = screen.getByText('Share')
+    const shareButton = screen.getByRole('button', { name: /Share/i })
     fireEvent.click(shareButton)
     
     await waitFor(() => {
@@ -171,7 +176,7 @@ describe('BookDetail', () => {
     render(<BookDetail book={mockBook} />)
     
     // Open share
-    const shareButton = screen.getByText('Share')
+    const shareButton = screen.getByRole('button', { name: /Share/i })
     fireEvent.click(shareButton)
     
     await waitFor(() => {
@@ -212,9 +217,9 @@ describe('BookDetail', () => {
 
   it('displays reviews section placeholder', () => {
     render(<BookDetail book={mockBook} />)
-    
-    expect(screen.getByText('Reviews')).toBeInTheDocument()
-    expect(screen.getByText('Reviews will be available soon. Be the first to review this book!')).toBeInTheDocument()
+    // Reviews section replaced by Preview card
+    expect(screen.getAllByText('Preview Book').length).toBeGreaterThan(0)
+    expect(screen.getByText('View a sample of this book before purchasing.')).toBeInTheDocument()
   })
 
   it('handles book without description', () => {

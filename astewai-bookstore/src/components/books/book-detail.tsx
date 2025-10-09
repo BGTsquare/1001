@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Share2, Heart, BookOpen, Star, Calendar, Tag } from 'lucide-react'
+import { ArrowLeft, Share2, BookOpen, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OptimizedImage } from '@/components/ui/optimized-image'
@@ -109,9 +109,6 @@ export function BookDetail({ book }: BookDetailProps) {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Heart className="h-4 w-4" />
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -206,18 +203,42 @@ export function BookDetail({ book }: BookDetailProps) {
             </CardContent>
           </Card>
 
-          {/* Reviews Section Placeholder */}
+          {/* Preview Section (replaces Reviews) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Reviews
+                <BookOpen className="h-5 w-5" />
+                Preview Book
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Reviews will be available soon. Be the first to review this book!
-              </p>
+              {content_url ? (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">View a sample of this book before purchasing.</p>
+                  <div className="w-full h-48 overflow-hidden rounded bg-muted">
+                    {/* If cover exists, use it as a preview thumbnail */}
+                    {cover_image_url ? (
+                      <img
+                        src={cover_image_url}
+                        alt={`Preview thumbnail for ${title}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Button variant="outline" onClick={() => setShowPreview(true)}>
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Preview Book
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No preview available for this book.</p>
+              )}
             </CardContent>
           </Card>
         </div>

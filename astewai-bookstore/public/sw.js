@@ -1,8 +1,9 @@
 // Enhanced Service Worker for PWA functionality
-const CACHE_NAME = 'astewai-bookstore-v2'
-const STATIC_CACHE = 'static-v2'
-const DYNAMIC_CACHE = 'dynamic-v2'
-const IMAGE_CACHE = 'images-v2'
+// Bumped cache names to force cache invalidation when this file changes
+const CACHE_NAME = 'astewai-bookstore-v3'
+const STATIC_CACHE = 'static-v3'
+const DYNAMIC_CACHE = 'dynamic-v3'
+const IMAGE_CACHE = 'images-v3'
 
 // Critical resources to cache immediately
 const urlsToCache = [
@@ -32,6 +33,8 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache)
       })
   )
+  // Activate this service worker immediately and take control
+  self.skipWaiting()
 })
 
 // Fetch event - serve from cache when offline

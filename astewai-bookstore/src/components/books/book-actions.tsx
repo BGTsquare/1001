@@ -4,7 +4,6 @@ import { ShoppingCart, BookPlus, Loader2, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBookOwnership } from '@/hooks/use-book-ownership'
 import { useBookActions } from '@/hooks/use-book-actions'
-import { BookContactActions } from './book-contact-actions'
 import type { Book } from '@/types'
 
 interface BookActionsProps {
@@ -73,7 +72,7 @@ export function BookActions({ book, onContactInitiated }: BookActionsProps) {
     )
   }
 
-  // Paid book - show purchase options
+  // Paid book - show only primary purchase button
   return (
     <div className="space-y-3">
       <Button
@@ -91,31 +90,6 @@ export function BookActions({ book, onContactInitiated }: BookActionsProps) {
           <>
             <ShoppingCart className="h-4 w-4 mr-2" />
             Buy Now
-          </>
-        )}
-      </Button>
-      
-      <BookContactActions 
-        book={book} 
-        onContactInitiated={onContactInitiated}
-      />
-      
-      <Button
-        onClick={handleAddToLibrary}
-        disabled={isAddingToLibrary}
-        variant="outline"
-        className="w-full"
-        size="lg"
-      >
-        {isAddingToLibrary ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Adding...
-          </>
-        ) : (
-          <>
-            <BookPlus className="h-4 w-4 mr-2" />
-            Add to Wishlist
           </>
         )}
       </Button>

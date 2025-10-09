@@ -508,6 +508,51 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_config: {
+        Row: {
+          id: string
+          wallet_name: string
+          wallet_type: 'mobile_money' | 'bank_app' | 'manual_bank'
+          deep_link_template: string | null
+          instructions: string | null
+          account_details: Json | null
+          tx_id_pattern: string | null
+          is_active: boolean
+          display_order: number
+          icon_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_name: string
+          wallet_type: 'mobile_money' | 'bank_app' | 'manual_bank'
+          deep_link_template?: string | null
+          instructions?: string | null
+          account_details?: Json | null
+          tx_id_pattern?: string | null
+          is_active?: boolean
+          display_order?: number
+          icon_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_name?: string
+          wallet_type?: 'mobile_money' | 'bank_app' | 'manual_bank'
+          deep_link_template?: string | null
+          instructions?: string | null
+          account_details?: Json | null
+          tx_id_pattern?: string | null
+          is_active?: boolean
+          display_order?: number
+          icon_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           id: string

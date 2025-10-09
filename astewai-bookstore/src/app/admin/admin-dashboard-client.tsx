@@ -61,5 +61,10 @@ export function AdminDashboardClient() {
     )
   }
 
-  return <AdminDashboard stats={stats} />
+  return (
+    <div>
+      {stats && <AdminDashboard stats={stats} />}
+      {/* Wallet Configurations moved to its own page in the sidebar */}
+    </div>
+  )
 }

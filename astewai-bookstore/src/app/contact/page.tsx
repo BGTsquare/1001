@@ -7,6 +7,15 @@ import { Mail, Phone, MapPin, Clock, MessageSquare, HelpCircle } from 'lucide-re
 import { generateMetadata } from '@/lib/seo/metadata';
 import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
 import { StructuredData } from '@/components/seo/structured-data';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Mail, Phone, MapPin, Clock, MessageSquare, HelpCircle } from 'lucide-react';
+import { generateMetadata } from '@/lib/seo/metadata';
+import { generateBreadcrumbStructuredData } from '@/lib/seo/structured-data';
+import { StructuredData } from '@/components/seo/structured-data';
 
 export const metadata = generateMetadata({
   title: 'Contact Us - Get Support & Help',
