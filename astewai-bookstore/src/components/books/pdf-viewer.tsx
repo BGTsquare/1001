@@ -16,24 +16,16 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 // host/port). Wrap in try/catch to avoid throwing during server-side evaluation.
 try {
   const defaultWorkerPath = '/pdfjs/pdf.worker.min.js'
-    // If running in the browser, use location.origin to build an absolute URL.
-    const localWorkerUrl = typeof location !== 'undefined' ? `${location.origin}${defaultWorkerPath}` : defaultWorkerPath
+  // If running in the browser, use location.origin to build an absolute URL.
+  const localWorkerUrl = typeof location !== 'undefined' ? `${location.origin}${defaultWorkerPath}` : defaultWorkerPath
 
-    // If pdfjs exposes a runtime version, prefer loading a CDN worker that matches
-    // the runtime API immediately. This avoids loading a local worker that was
-    // copied from a different pdfjs-dist release and causing a mismatch.
-    // Fall back to NEXT_PUBLIC_PDFJS_VERSION, then to the local worker.
-    const runtimeVersion = ((pdfjs as any)?.version || '').toString().trim()
-    const expected = runtimeVersion || (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
-    if (expected) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${expected}/build/pdf.worker.min.js`
-    } else {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      pdfjs.GlobalWorkerOptions.workerSrc = localWorkerUrl
-    }
+  // Force a same-origin worker synchronously. This avoids CSP issues that
+  // block blob: workers or loading the worker from an external CDN. The
+  // async verification below may still switch to a CDN fallback if the
+  // local worker is missing and NEXT_PUBLIC_PDFJS_VERSION is provided.
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  pdfjs.GlobalWorkerOptions.workerSrc = localWorkerUrl
 } catch (err) {
   // If anything goes wrong, fall back to the relative path — react-pdf will
   // surface a helpful error and we show a fallback UI below.
