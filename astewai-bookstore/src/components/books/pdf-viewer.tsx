@@ -16,11 +16,24 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 // host/port). Wrap in try/catch to avoid throwing during server-side evaluation.
 try {
   const defaultWorkerPath = '/pdfjs/pdf.worker.min.js'
-  // If running in the browser, use location.origin to build an absolute URL.
-  const workerPath = typeof location !== 'undefined' ? `${location.origin}${defaultWorkerPath}` : defaultWorkerPath
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore - pdfjs type may not accept all runtime shapes here
-  pdfjs.GlobalWorkerOptions.workerSrc = workerPath
+    // If running in the browser, use location.origin to build an absolute URL.
+    const localWorkerUrl = typeof location !== 'undefined' ? `${location.origin}${defaultWorkerPath}` : defaultWorkerPath
+
+    // If pdfjs exposes a runtime version, prefer loading a CDN worker that matches
+    // the runtime API immediately. This avoids loading a local worker that was
+    // copied from a different pdfjs-dist release and causing a mismatch.
+    // Fall back to NEXT_PUBLIC_PDFJS_VERSION, then to the local worker.
+    const runtimeVersion = ((pdfjs as any)?.version || '').toString().trim()
+    const expected = runtimeVersion || (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
+    if (expected) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${expected}/build/pdf.worker.min.js`
+    } else {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      pdfjs.GlobalWorkerOptions.workerSrc = localWorkerUrl
+    }
 } catch (err) {
   // If anything goes wrong, fall back to the relative path — react-pdf will
   // surface a helpful error and we show a fallback UI below.
@@ -33,32 +46,61 @@ try {
 // the published worker on unpkg for the installed pdfjs-dist version. We use
 // the NEXT_PUBLIC_PDFJS_VERSION environment variable set at build time.
 if (typeof window !== 'undefined') {
-  const testWorker = async () => {
-    const url = `${location.origin}/pdfjs/pdf.worker.min.js`
+  const verifyLocalWorkerAndMaybeFallback = async () => {
+    const localWorkerUrl = `${location.origin}/pdfjs/pdf.worker.min.js`
+    const versionUrl = `${location.origin}/pdfjs/pdf.worker.version.txt`
+
     try {
-      const res = await fetch(url, { method: 'HEAD' })
-      if (!res.ok) {
-        const v = (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
-        if (v) {
-          // Use unpkg CDN as a fallback
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${v}/build/pdf.worker.min.js`
-        }
+      // Check that the local worker exists
+      const res = await fetch(localWorkerUrl, { method: 'HEAD' })
+      if (!res.ok) throw new Error('local worker missing')
+
+      // Read local worker version (written by copy script)
+    let localVersion = ''
+      try {
+        const vres = await fetch(versionUrl)
+        if (vres.ok) localVersion = (await vres.text()).trim()
+      } catch (e) {
+        // ignore read errors
+      }
+
+      // If NEXT_PUBLIC_PDFJS_VERSION is set at build time, prefer matching versions.
+      const expected = (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
+      if (expected && localVersion && expected !== localVersion) {
+        // mismatch: leave the CDN worker (already set above) to avoid UnknownErrorException
+        return
+      }
+
+      // If versions match (or expected not set), switch to local worker with cache-busting
+      if (localVersion) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        pdfjs.GlobalWorkerOptions.workerSrc = `${location.origin}/pdfjs/pdf.worker.min.js?v=${encodeURIComponent(localVersion)}`
+      } else {
+        // no version info, but local worker exists — use it (append timestamp to avoid stale caches)
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        pdfjs.GlobalWorkerOptions.workerSrc = `${location.origin}/pdfjs/pdf.worker.min.js?v=${Date.now()}`
       }
     } catch (e) {
-      // network failure - nothing else to do
+      // local worker missing or network fail - try CDN fallback if NEXT_PUBLIC_PDFJS_VERSION provided
+      const v = (process.env.NEXT_PUBLIC_PDFJS_VERSION || '').trim()
+      if (v) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${v}/build/pdf.worker.min.js`
+      }
     }
   }
-  void testWorker()
+
+  void verifyLocalWorkerAndMaybeFallback()
 }
 
 interface PdfViewerProps {
   pdfUrl: string | null
-  fallbackDownloadUrl?: string
 }
 
-export default function PdfViewer({ pdfUrl, fallbackDownloadUrl }: PdfViewerProps) {
+export default function PdfViewer({ pdfUrl }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const [pageNumber, setPageNumber] = useState<number>(1)
   const [scale, setScale] = useState<number>(1.0)

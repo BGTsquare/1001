@@ -93,8 +93,8 @@ importers:
         specifier: 15.4.4
         version: 15.4.4(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       pdfjs-dist:
-        specifier: ^5.4.296
-        version: 5.4.296
+        specifier: ^5.3.93
+        version: 5.3.93
       plausible-tracker:
         specifier: ^0.3.9
         version: 0.3.9
@@ -3907,10 +3907,6 @@ packages:
 
   pdfjs-dist@5.3.93:
     resolution: {integrity: sha512-w3fQKVL1oGn8FRyx5JUG5tnbblggDqyx2XzA5brsJ5hSuS+I0NdnJANhmeWKLjotdbPQucLBug5t0MeWr0AAdg==, tarball: https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-5.3.93.tgz}
-    engines: {node: '>=20.16.0 || >=22.3.0'}
-
-  pdfjs-dist@5.4.296:
-    resolution: {integrity: sha512-DlOzet0HO7OEnmUmB6wWGJrrdvbyJKftI1bhMitK7O2N8W2gc757yyYBbINy9IDafXAV9wmKr9t7xsTaNKRG5Q==, tarball: https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-5.4.296.tgz}
     engines: {node: '>=20.16.0 || >=22.3.0'}
 
   peberminta@0.9.0:
@@ -8612,10 +8608,6 @@ snapshots:
   pathval@2.0.1: {}
 
   pdfjs-dist@5.3.93:
-    optionalDependencies:
-      '@napi-rs/canvas': 0.1.80
-
-  pdfjs-dist@5.4.296:
     optionalDependencies:
       '@napi-rs/canvas': 0.1.80
 

@@ -2,11 +2,14 @@
   "name": "astewai-bookstore",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "pdfjs-dist": "5.3.93"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
-  "prebuild": "node ./scripts/copy-pdf-worker.js",
+    "prebuild": "node ./scripts/copy-pdf-worker.js",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -73,7 +76,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.525.0",
     "next": "15.4.4",
-    "pdfjs-dist": "^5.4.296",
+    "pdfjs-dist": "^5.3.93",
     "plausible-tracker": "^0.3.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",

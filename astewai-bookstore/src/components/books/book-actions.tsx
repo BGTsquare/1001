@@ -76,11 +76,11 @@ export function BookActions({ book, onContactInitiated }: BookActionsProps) {
   return (
     <div className="space-y-3">
       <Button
-        onClick={handlePurchase}
-        disabled={isPurchasing}
-        className="w-full"
-        size="lg"
-      >
+            onClick={() => { onContactInitiated?.('purchase'); handlePurchase() }}
+            disabled={isPurchasing}
+            className="w-full"
+            size="lg"
+          >
         {isPurchasing ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
