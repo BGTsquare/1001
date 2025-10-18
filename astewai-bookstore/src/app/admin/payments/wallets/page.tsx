@@ -1,5 +1,3 @@
-"use server"
-
 import React from 'react'
 import WalletsManagement from '@/components/admin/wallets-management'
 
