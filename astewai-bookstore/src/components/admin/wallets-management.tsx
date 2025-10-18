@@ -31,8 +31,11 @@ export default function WalletsManagement() {
   const [form, setForm] = useState<any>({
     wallet_name: '',
     wallet_type: 'mobile_money',
-    deep_link_template: '',
+    deep_link_template: null,
+    // keep account_details as JSON text in the form but expose an account_number helper
     account_details: '{}',
+    account_number: '',
+    account_name: '',
     is_active: true,
     display_order: 0,
     icon_url: ''
@@ -56,20 +59,38 @@ export default function WalletsManagement() {
 
   function openAdd() {
     setEditing(null)
-    setForm({ wallet_name: '', wallet_type: 'mobile_money', deep_link_template: '', account_details: '{}', is_active: true, display_order: 0, icon_url: '' })
+    setForm({ wallet_name: '', wallet_type: 'mobile_money', deep_link_template: null, account_details: '{}', account_number: '', account_name: '', is_active: true, display_order: 0, icon_url: '' })
     setDialogOpen(true)
   }
 
   function openEdit(w: Wallet) {
     setEditing(w)
-    setForm({ ...w, account_details: JSON.stringify(w.account_details || {}, null, 2) })
+    // extract account number if available
+    let accountNumber = ''
+    let accountName = ''
+    try {
+      const details = typeof w.account_details === 'string' ? JSON.parse(w.account_details || '{}') : (w.account_details || {})
+      accountNumber = details?.account_number || details?.account || ''
+      accountName = details?.account_name || details?.name || ''
+    } catch (e) {
+      accountNumber = ''
+    }
+
+    setForm({ ...w, account_details: JSON.stringify(w.account_details || {}, null, 2), account_number: accountNumber, account_name: accountName, deep_link_template: w.deep_link_template ?? null })
     setDialogOpen(true)
   }
 
   async function handleSave() {
     try {
-      const payload: any = { ...form }
-      try { payload.account_details = JSON.parse(form.account_details) } catch (e) { throw new Error('Account details JSON invalid') }
+  const payload: any = { ...form }
+  let parsed: any = {}
+  try { parsed = JSON.parse(form.account_details) } catch (e) { throw new Error('Account details JSON invalid') }
+  // if admin provided a top-level account_number or account_name, ensure they're included in account_details
+  if (form.account_number) parsed = { ...parsed, account_number: form.account_number }
+  if (form.account_name) parsed = { ...parsed, account_name: form.account_name }
+  payload.account_details = parsed
+  // clear any deep-link templates (we no longer use deeplinks)
+  payload.deep_link_template = null
 
       const method = editing ? 'PUT' : 'POST'
       if (editing) payload.id = editing.id
@@ -182,8 +203,14 @@ export default function WalletsManagement() {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Deep Link Template</label>
-              <Input value={form.deep_link_template} onChange={(e: any) => setForm({ ...form, deep_link_template: e.target.value })} placeholder="https://payment-provider.com/pay?amount={amount}&currency=USD&recipient={account}" />
+              <label className="text-sm font-medium">Account name (bank or mobile wallet)</label>
+              <Input value={form.account_name} onChange={(e: any) => setForm({ ...form, account_name: e.target.value })} placeholder="e.g., Acme Bank or MTN Mobile Money" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Account number (for manual transfers)</label>
+              <Input value={form.account_number} onChange={(e: any) => setForm({ ...form, account_number: e.target.value })} placeholder="e.g., 0123456789 or IBAN" />
+              <p className="text-xs text-muted-foreground">Visible to customers on the purchase confirmation page.</p>
             </div>
 
             <div>
@@ -205,6 +232,52 @@ export default function WalletsManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quick copyable display for active account numbers at the bottom */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Account numbers (copyable)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {wallets.length === 0 ? (
+              <div className="text-muted-foreground">No configured accounts</div>
+            ) : (
+              <div className="space-y-3">
+                {wallets.map((w) => {
+                  // try to extract account number
+                  let accountNumber = ''
+                  try {
+                    const details = typeof w.account_details === 'string' ? JSON.parse(w.account_details || '{}') : (w.account_details || {})
+                    accountNumber = details?.account_number || details?.account || ''
+                  } catch (e) {
+                    accountNumber = ''
+                  }
+
+                  const typeLabel = (w.wallet_type === 'mobile_money' || w.wallet_type === 'bank_transfer') ? w.wallet_type.replace('_', ' ') : w.wallet_type
+
+                  return (
+                    <div key={w.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <div className="font-medium">{w.wallet_name}</div>
+                        <div className="text-sm text-muted-foreground">{accountNumber ? `${typeLabel} · ${accountNumber}` : ''}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {accountNumber ? (
+                          <button className="px-3 py-1 bg-primary text-white rounded text-sm" onClick={() => { try { navigator.clipboard.writeText(accountNumber); toast.success('Copied') } catch (e) { toast('Copy failed') } }}>Copy</button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No account</span>
+                        )}
+                        <Button variant="ghost" onClick={() => openEdit(w)}>Edit</Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

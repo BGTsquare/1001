@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -146,51 +147,101 @@ function MiniOrderSummary({ book, wallets }: { book: Book; wallets: Wallet[] }) 
 
 function PaymentSelector({ wallets, book }: { wallets: Wallet[]; book: Book }) {
   const [selected, setSelected] = useState<string | null>(wallets?.[0]?.id ?? null)
+  const [paymentAccounts, setPaymentAccounts] = useState<any[] | null>(null)
 
   useEffect(() => {
     if (wallets && wallets.length > 0) setSelected(wallets[0].id)
+    // load payment accounts/config for manual methods
+    ;(async () => {
+      try {
+        const res = await fetch('/api/payments/config')
+        if (!res.ok) return
+        const json = await res.json()
+        // expects { data: [{ provider_name, instructions, config_type, account_number, account_details }] }
+        if (json?.data && Array.isArray(json.data)) {
+          setPaymentAccounts(json.data)
+        }
+      } catch (e) {
+        // ignore
+      }
+    })()
   }, [wallets])
 
   const selectedWallet = useMemo(() => wallets?.find((w) => w.id === selected) ?? null, [wallets, selected])
+  // Build a unified accounts list from paymentAccounts (API) or wallet.account_details
+  const accounts = useMemo(() => {
+    const fromApi = Array.isArray(paymentAccounts) ? paymentAccounts.map((acct: any) => {
+      let accountNumber = acct.account_number || ''
+      let accountName = acct.account_name || ''
+      try {
+        if ((!accountNumber || !accountName) && acct.account_details) {
+          const d = typeof acct.account_details === 'string' ? JSON.parse(acct.account_details || '{}') : acct.account_details
+          accountNumber = accountNumber || d?.account_number || ''
+          accountName = accountName || d?.account_name || ''
+        }
+      } catch (e) {}
+      return { provider: acct.provider_name || acct.provider || acct.providerName || 'Account', accountName, accountNumber }
+    }) : []
+
+    const fromWallets = Array.isArray(wallets) ? wallets.map((w: any) => {
+      let accountNumber = ''
+      let accountName = ''
+      try {
+        const d = typeof w.account_details === 'string' ? JSON.parse(w.account_details || '{}') : (w.account_details || {})
+        accountNumber = d?.account_number || ''
+        accountName = d?.account_name || ''
+      } catch (e) {}
+      return { provider: w.wallet_name || 'Account', accountName, accountNumber }
+    }).filter(a => a.accountNumber) : []
+
+    // prefer API-sourced accounts, but merge with wallet-derived accounts
+    const combined = fromApi.length > 0 ? fromApi.concat(fromWallets) : fromWallets
+    // dedupe by accountNumber
+    const seen = new Set<string>()
+    return combined.filter((a) => {
+      if (!a.accountNumber) return false
+      if (seen.has(a.accountNumber)) return false
+      seen.add(a.accountNumber)
+      return true
+    })
+  }, [paymentAccounts, wallets])
 
   return (
     <div className="space-y-4">
-      <fieldset>
-        <legend className="sr-only">Choose payment method</legend>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {(wallets && wallets.length > 0) ? wallets.map((w) => {
-            const template = w.deep_link_template || ''
-            const link = template
-              .replace('{amount}', String(book.price ?? ''))
-              .replace('{reference}', book.id)
-
-            return (
-              <label key={w.id} className="relative p-4 border rounded-lg cursor-pointer hover:shadow transition-shadow focus-within:ring-2 focus-within:ring-ring" htmlFor={`wallet-${w.id}`}>
-                <input id={`wallet-${w.id}`} name="wallet" type="radio" className="sr-only" checked={selected === w.id} onChange={() => setSelected(w.id)} />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{w.wallet_name}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{template ? 'Instant deep-link' : 'Manual transfer'}</div>
-                  </div>
-                  <div className="ml-4 text-sm text-muted-foreground">Open</div>
+      <div>
+        <Label className="mb-2">Available account numbers</Label>
+        <div className="space-y-3">
+          {accounts.length > 0 ? (
+            accounts.map((acct, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 border rounded bg-white">
+                <div>
+                  <div className="font-medium">{acct.provider}{acct.accountName ? ` • ${acct.accountName}` : ''}</div>
+                  <div className="text-sm text-muted-foreground">{acct.accountNumber}</div>
                 </div>
-
-                {selected === w.id && (
-                  <div className="mt-3">
-                    <DeeplinkButton wallet={w} book={book} />
-                  </div>
-                )}
-              </label>
-            )
-          }) : (
-            <div className="p-4 border rounded-lg text-sm text-muted-foreground">No deep-links configured — you can upload payment verification instead.</div>
+                <div>
+                  <button className="px-3 py-1 bg-primary text-white rounded" onClick={() => { try { navigator.clipboard.writeText(acct.accountNumber); toast.success('Account number copied') } catch (e) { toast.error('Copy failed') } }}>Copy</button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-muted-foreground">No configured accounts</div>
           )}
         </div>
-      </fieldset>
+      </div>
 
       <div>
-        <Label className="mb-2">Or upload a receipt for manual verification</Label>
-        <ReceiptUploader bookId={book.id} amount={book.price ?? undefined} />
+        <Label className="mb-2">Manual payment instructions</Label>
+        <div className="p-3 border rounded bg-gray-50 text-sm text-muted-foreground">
+          {accounts.length > 0 ? (
+            <div>You can make a manual transfer to one of the accounts above and upload the receipt below.</div>
+          ) : (
+            <div>You can make a manual transfer to one of our configured accounts and upload the receipt below.</div>
+          )}
+        </div>
+        <div className="mt-4">
+          <Label className="mb-2">Or upload a receipt for manual verification</Label>
+          <ReceiptUploader bookId={book.id} amount={book.price ?? undefined} paymentRequestId={null} />
+        </div>
       </div>
     </div>
   )
@@ -268,13 +319,29 @@ function DeeplinkButton({ wallet, book }: { wallet: Wallet; book: Book }) {
   )
 }
 
-function ReceiptUploader({ bookId, amount }: { bookId: string; amount?: number | null }) {
+function ReceiptUploader({ bookId, amount, paymentRequestId }: { bookId: string; amount?: number | null; paymentRequestId?: string | null }) {
   const [file, setFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(e.target.files?.[0] ?? null)
+    const f = e.target.files?.[0] ?? null
+    if (f) {
+      if (!ALLOWED_TYPES.includes(f.type)) {
+        setMessage('Invalid file type. Accepted: JPG, PNG, WEBP, PDF')
+        setFile(null)
+        return
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        setMessage('File too large. Maximum 10 MB allowed.')
+        setFile(null)
+        return
+      }
+    }
+    setFile(f)
     setMessage(null)
   }
 
@@ -290,6 +357,8 @@ function ReceiptUploader({ bookId, amount }: { bookId: string; amount?: number |
       fd.append('receipt', file)
       fd.append('bookId', bookId)
       fd.append('amount', String(amount))
+      if (paymentRequestId) fd.append('paymentRequestId', paymentRequestId)
+      fd.append('method', 'manual')
 
       const res = await fetch('/api/payments/submit', { method: 'POST', body: fd })
         if (!res.ok) {
@@ -314,6 +383,7 @@ function ReceiptUploader({ bookId, amount }: { bookId: string; amount?: number |
           } else {
             setMessage('Receipt uploaded — admin will verify shortly.')
           }
+          setMessage('Receipt uploaded — admin will verify shortly. Check your orders page for status updates.')
         } catch (e) {
           setMessage('Receipt uploaded — admin will verify shortly.')
         }

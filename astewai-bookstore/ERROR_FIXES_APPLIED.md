@@ -137,3 +137,11 @@ The next step is applying the database migration to enable full functionality, b
 
 **Current Status**: ✅ **Production Ready with Graceful Degradation**
 **Next Goal**: 🎯 **Full Functionality via Database Migration**
+
+## 📝 Small UI update
+
+- Changed admin wallet configuration displays to show only the configured account number alongside the wallet type (e.g. "Mobile Money · 0123456789") instead of rendering deep-link templates. Files changed:
+  - `src/components/admin/wallet-config-manager.tsx` — admin wallet config list and configured account numbers panel
+  - `src/components/admin/wallets-management.tsx` — admin wallets list and quick copyable accounts panel
+
+You can revert by restoring those files from git if needed.

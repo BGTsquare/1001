@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid file type. Only JPG, PNG and PDF allowed' }, { status: 400 })
       }
 
-      const maxSize = 5 * 1024 * 1024 // 5MB
+      const maxSize = 10 * 1024 * 1024 // 10MB
       if (file.size > maxSize) {
         return NextResponse.json({ error: 'File size too large. Maximum is 5MB' }, { status: 400 })
       }
@@ -64,10 +64,10 @@ export async function POST(request: NextRequest) {
       const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 
-      // Upload to storage (store object path; do not rely on public URL)
-      const fileName = `${paymentRequest.id}/${Date.now()}-${file.name}`
+      // Upload to storage (store object path; use private bucket for confirmations)
+      const fileName = `${user.id}/${paymentRequest.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`
       const { error: uploadError } = await supabase.storage
-        .from('payment-receipts')
+        .from('payment-confirmations')
         .upload(fileName, buffer, {
           contentType: file.type,
           upsert: false
@@ -81,29 +81,27 @@ export async function POST(request: NextRequest) {
       // Store object path instead of public URL
       const objectPath = fileName
 
-      // Update payment request with receipt object path
-      const currentReceipts = paymentRequest.receipt_urls || []
-      const updatedReceipts = [...currentReceipts, objectPath]
-
-      await paymentRepository.updatePaymentRequest(paymentRequest.id, {
-        receipt_urls: updatedReceipts
-      } as any)
-
-      // Generate a signed URL for immediate preview (expires in 1 hour)
-      const { data: signedData, error: signedError } = supabase.storage
-        .from('payment-receipts')
-        .createSignedUrl(objectPath, 60 * 60)
-
-      if (signedError) {
-        console.error('Error creating signed URL for receipt:', signedError)
-      } else {
-        publicUrl = signedData.signedUrl
+      // Insert manual submission record for admin review
+      const { data: insertData, error: insertError } = await supabase.from('manual_payment_submissions').insert([{ payment_request_id: paymentRequest.id, user_id: user.id, amount, receipt_urls: [], storage_paths: [objectPath] }]).select().single()
+      if (insertError) {
+        console.error('Failed to create manual submission:', insertError)
       }
 
-      // Run OCR processing / auto-matching
-      const ocr = await paymentService.processReceiptUpload(paymentRequest.id, buffer)
-      if (ocr.success) {
-        ocrResult = ocr.data
+      // Generate a signed URL for immediate preview
+      const { data: signedData, error: signedError } = supabase.storage
+        .from('payment-confirmations')
+        .createSignedUrl(objectPath, 60 * 60)
+
+      if (!signedError && signedData) publicUrl = signedData.signedUrl
+
+      // Optionally run OCR processing / auto-matching in background
+      try {
+        const ocr = await paymentService.processReceiptUpload(paymentRequest.id, buffer)
+        if (ocr.success) {
+          ocrResult = ocr.data
+        }
+      } catch (e) {
+        console.error('OCR processing failed (non-fatal):', e)
       }
     }
 
