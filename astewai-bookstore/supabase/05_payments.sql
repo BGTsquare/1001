@@ -32,6 +32,12 @@ CREATE TABLE IF NOT EXISTS public.payment_requests (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'payment_initiated', 'awaiting_verification', 'completed', 'failed', 'cancelled')),
   selected_wallet_id UUID REFERENCES public.wallet_config(id) ON DELETE SET NULL,
   manual_tx_id TEXT,
+  -- OCR processing fields
+  ocr_processed_at TIMESTAMPTZ,
+  ocr_extracted_tx_id TEXT,
+  ocr_extracted_amount NUMERIC(10,2),
+  ocr_confidence_score NUMERIC(3,2),
+  ocr_raw_text TEXT,
   receipt_urls TEXT[],
   admin_verified_at TIMESTAMPTZ,
   admin_verified_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -50,6 +56,7 @@ ALTER TABLE public.payment_requests ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_payment_requests_user_id ON public.payment_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON public.payment_requests(status);
 CREATE INDEX IF NOT EXISTS idx_payment_requests_created_at ON public.payment_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_payment_requests_ocr_extracted_tx_id ON public.payment_requests(ocr_extracted_tx_id);
 
 -- SECTION 3: RLS POLICIES
 DROP POLICY IF EXISTS "Active wallet configs are publicly readable" ON public.wallet_config;

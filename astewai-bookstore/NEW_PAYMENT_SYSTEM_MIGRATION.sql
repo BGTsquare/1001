@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS wallet_config (
 ALTER TABLE wallet_config ENABLE ROW LEVEL SECURITY;
 
 -- Wallet_config RLS policies
+-- Make policy creation idempotent
+DROP POLICY IF EXISTS "Active wallet configs are publicly readable" ON wallet_config;
+DROP POLICY IF EXISTS "Admins can manage wallet configs" ON wallet_config;
 CREATE POLICY "Active wallet configs are publicly readable" ON wallet_config
   FOR SELECT USING (is_active = true);
 
@@ -104,6 +107,11 @@ CREATE TABLE IF NOT EXISTS payment_requests (
 ALTER TABLE payment_requests ENABLE ROW LEVEL SECURITY;
 
 -- Payment_requests RLS policies
+-- Make policy creation idempotent
+DROP POLICY IF EXISTS "Users can view own payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Users can create own payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Users can update own payment requests" ON payment_requests;
+DROP POLICY IF EXISTS "Admins can manage all payment requests" ON payment_requests;
 CREATE POLICY "Users can view own payment requests" ON payment_requests
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -148,7 +156,8 @@ CREATE TABLE IF NOT EXISTS payment_verification_logs (
 -- Enable RLS on payment_verification_logs
 ALTER TABLE payment_verification_logs ENABLE ROW LEVEL SECURITY;
 
--- Payment_verification_logs RLS policies
+DROP POLICY IF EXISTS "Users can view logs for own payment requests" ON payment_verification_logs;
+DROP POLICY IF EXISTS "Admins can manage all verification logs" ON payment_verification_logs;
 CREATE POLICY "Users can view logs for own payment requests" ON payment_verification_logs
   FOR SELECT USING (
     EXISTS (
@@ -192,6 +201,8 @@ CREATE TABLE IF NOT EXISTS auto_matching_rules (
 ALTER TABLE auto_matching_rules ENABLE ROW LEVEL SECURITY;
 
 -- Auto_matching_rules RLS policies
+-- Make policy creation idempotent
+DROP POLICY IF EXISTS "Admins can manage auto matching rules" ON auto_matching_rules;
 CREATE POLICY "Admins can manage auto matching rules" ON auto_matching_rules
   FOR ALL USING (
     EXISTS (
@@ -220,10 +231,9 @@ VALUES (
   file_size_limit = 10485760,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
--- =============================================
--- STORAGE POLICIES UPDATE
--- =============================================
--- Payment receipts storage policies
+DROP POLICY IF EXISTS "Users can upload payment receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view own payment receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can manage all payment receipts" ON storage.objects;
 CREATE POLICY "Users can upload payment receipts" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'payment-receipts' AND

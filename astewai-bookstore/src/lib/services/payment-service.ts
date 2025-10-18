@@ -3,6 +3,7 @@
  */
 
 import { paymentRepository } from '@/lib/repositories/payment-repository'
+import { createNotificationService } from '@/lib/services/notification-service'
 import { ocrService } from '@/lib/services/ocr-service'
 import { autoMatchingService } from '@/lib/services/auto-matching-service'
 import type { 
@@ -275,8 +276,26 @@ export class PaymentService {
       })
 
       if (result.success && approve) {
-        // Add item to user's library
-        await this.addItemToUserLibrary(paymentRequestId)
+        // Add item to user's library via DB RPC (security-definer)
+        const grantResult = await paymentRepository.grantPurchaseToUser(paymentRequestId)
+        if (!grantResult.success) {
+          console.error('Failed to grant purchase via RPC:', grantResult.error)
+        }
+
+        // Send notification to user and admins
+        try {
+          const notificationService = createNotificationService()
+          // Fetch payment and user details
+          const paymentDetails = await this.getPaymentRequest(paymentRequestId)
+          if (paymentDetails.success && paymentDetails.data) {
+            const userEmail = paymentDetails.data.user_email
+            const subject = 'Your purchase has been approved'
+            const content = `Your payment for ${paymentDetails.data.item_title} has been approved and access granted. Request ID: ${paymentRequestId}`
+            await notificationService.sendEmailNotification(userEmail, subject, content)
+          }
+        } catch (e) {
+          console.error('Failed to send notification after approval:', e)
+        }
       }
 
       // Log the verification

@@ -50,21 +50,21 @@ export async function POST(request: NextRequest) {
     let ocrResult: any | undefined
 
     if (file) {
-      // Validate file type and size
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+      // Validate file type and size (allow only JPG, PNG, PDF)
+      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf']
       if (!allowedTypes.includes(file.type)) {
-        return NextResponse.json({ error: 'Invalid file type. Only JPG, PNG, WebP and PDF allowed' }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid file type. Only JPG, PNG and PDF allowed' }, { status: 400 })
       }
 
-      const maxSize = 10 * 1024 * 1024 // 10MB
+      const maxSize = 5 * 1024 * 1024 // 5MB
       if (file.size > maxSize) {
-        return NextResponse.json({ error: 'File size too large. Maximum is 10MB' }, { status: 400 })
+        return NextResponse.json({ error: 'File size too large. Maximum is 5MB' }, { status: 400 })
       }
 
       const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 
-      // Upload to storage
+      // Upload to storage (store object path; do not rely on public URL)
       const fileName = `${paymentRequest.id}/${Date.now()}-${file.name}`
       const { error: uploadError } = await supabase.storage
         .from('payment-receipts')
@@ -78,19 +78,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to upload receipt' }, { status: 500 })
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('payment-receipts').getPublicUrl(fileName)
-      publicUrl = urlData.publicUrl
+      // Store object path instead of public URL
+      const objectPath = fileName
 
-      // Update payment request with receipt URL
+      // Update payment request with receipt object path
       const currentReceipts = paymentRequest.receipt_urls || []
-      const updatedReceipts = [...currentReceipts, publicUrl]
+      const updatedReceipts = [...currentReceipts, objectPath]
 
       await paymentRepository.updatePaymentRequest(paymentRequest.id, {
-        receipt_urls: updatedReceipts,
-        // ts-ignore: repository accepts arbitrary update fields not expressed in type
-        // include uploaded timestamp for admin diagnostics
+        receipt_urls: updatedReceipts
       } as any)
+
+      // Generate a signed URL for immediate preview (expires in 1 hour)
+      const { data: signedData, error: signedError } = supabase.storage
+        .from('payment-receipts')
+        .createSignedUrl(objectPath, 60 * 60)
+
+      if (signedError) {
+        console.error('Error creating signed URL for receipt:', signedError)
+      } else {
+        publicUrl = signedData.signedUrl
+      }
 
       // Run OCR processing / auto-matching
       const ocr = await paymentService.processReceiptUpload(paymentRequest.id, buffer)

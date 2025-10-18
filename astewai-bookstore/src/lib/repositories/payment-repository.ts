@@ -25,6 +25,24 @@ export class PaymentRepository {
   }
 
   /**
+   * Call DB RPC to grant purchased items to user after completion (security definer function)
+   */
+  async grantPurchaseToUser(paymentRequestId: string): Promise<ApiResponse<boolean>> {
+    try {
+      const supabase = await this.getSupabaseClient()
+      const { error } = await supabase.rpc('grant_purchase_to_user', { p_payment_request_id: paymentRequestId })
+      if (error) {
+        console.error('Error calling grant_purchase_to_user RPC:', error)
+        return { success: false, error: error.message }
+      }
+      return { success: true, data: true }
+    } catch (error) {
+      console.error('Error in grantPurchaseToUser:', error)
+      return { success: false, error: 'Failed to grant purchase' }
+    }
+  }
+
+  /**
    * Create a new payment request
    */
   async createPaymentRequest(data: CreatePaymentRequestData & { user_id: string }): Promise<ApiResponse<PaymentRequest>> {

@@ -16,7 +16,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES
-  ('payment-receipts', 'payment-receipts', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','application/pdf'])
+  ('payment-receipts', 'payment-receipts', false, 5242880, ARRAY['image/jpeg','image/png','application/pdf'])
 ON CONFLICT (id) DO NOTHING;
 
 -- SECTION 2: HELPER FUNCTIONS
