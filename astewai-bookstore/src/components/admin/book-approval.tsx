@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -80,9 +81,21 @@ export function BookApproval({ className }: BookApprovalProps) {
         body: JSON.stringify({ notes: reviewNotes })
       })
 
-      if (!response.ok) throw new Error('Failed to approve book')
+      if (!response.ok) {
+        let errorMessage = 'Failed to approve book';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          try {
+            const errorText = await response.text();
+            errorMessage = `Server error: ${errorText.substring(0, 200)}...`;
+          } catch (textError) { /* Ignore */ }
+        }
+        throw new Error(errorMessage);
+      }
 
-      // Update book status
+      toast.success('Book approved successfully!')
       setBooks(prev => prev.map(book => 
         book.id === bookId 
           ? { ...book, status: 'approved', reviewed_at: new Date().toISOString(), reviewer_notes: reviewNotes }
@@ -91,9 +104,9 @@ export function BookApproval({ className }: BookApprovalProps) {
 
       setSelectedBook(null)
       setReviewNotes('')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving book:', error)
-      alert('Failed to approve book. Please try again.')
+      toast.error(error.message)
     } finally {
       setProcessingAction(null)
     }
@@ -101,7 +114,7 @@ export function BookApproval({ className }: BookApprovalProps) {
 
   const handleReject = async (bookId: string) => {
     if (!reviewNotes.trim()) {
-      alert('Please provide rejection notes to help the author understand the issues.')
+      toast.error('Please provide rejection notes to help the author understand the issues.')
       return
     }
 
@@ -113,9 +126,21 @@ export function BookApproval({ className }: BookApprovalProps) {
         body: JSON.stringify({ notes: reviewNotes })
       })
 
-      if (!response.ok) throw new Error('Failed to reject book')
+      if (!response.ok) {
+        let errorMessage = 'Failed to reject book';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || JSON.stringify(errorData);
+        } catch (jsonError) {
+          try {
+            const errorText = await response.text();
+            errorMessage = `Server error: ${errorText.substring(0, 200)}...`;
+          } catch (textError) { /* Ignore */ }
+        }
+        throw new Error(errorMessage);
+      }
 
-      // Update book status
+      toast.success('Book rejected successfully.')
       setBooks(prev => prev.map(book => 
         book.id === bookId 
           ? { ...book, status: 'rejected', reviewed_at: new Date().toISOString(), reviewer_notes: reviewNotes }
@@ -124,9 +149,9 @@ export function BookApproval({ className }: BookApprovalProps) {
 
       setSelectedBook(null)
       setReviewNotes('')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error rejecting book:', error)
-      alert('Failed to reject book. Please try again.')
+      toast.error(error.message)
     } finally {
       setProcessingAction(null)
     }

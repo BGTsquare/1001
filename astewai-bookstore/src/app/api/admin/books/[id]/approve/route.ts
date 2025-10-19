@@ -1,89 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
-// Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
-interface RouteParams {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export async function POST(request: NextRequest, context: RouteParams) {
-  const params = await context.params;
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin', { user_id: user.id });
+    if (adminError || !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Parse request body
-    const { notes } = await request.json()
+    const { notes } = await request.json();
+    const bookId = params.id;
 
-    // Check if book exists
-    const { data: book, error: bookError } = await supabase
-      .from('books')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (bookError || !book) {
-      return NextResponse.json({ error: 'Book not found' }, { status: 404 })
-    }
-
-    // In a real implementation, you would update a status field or approval table
-    // For now, we'll just update the updated_at timestamp to simulate approval
-    const { data: updatedBook, error: updateError } = await supabase
+    const { data: updatedBook, error: updateError } = await supabaseAdmin
       .from('books')
       .update({
-        updated_at: new Date().toISOString()
-        // In a real implementation, you might add:
-        // status: 'approved',
-        // approved_at: new Date().toISOString(),
-        // approved_by: user.id,
-        // approval_notes: notes
+        status: 'approved',
+        reviewer_notes: notes,
+        reviewed_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', bookId)
       .select()
-      .single()
+      .single();
 
     if (updateError) {
-      console.error('Error approving book:', updateError)
-      return NextResponse.json({ error: 'Failed to approve book' }, { status: 500 })
+      return NextResponse.json({ error: 'Database error: ' + updateError.message }, { status: 500 });
     }
 
-    // TODO: Send notification to book author about approval
-    // TODO: Trigger any post-approval workflows (indexing, etc.)
+    return NextResponse.json(updatedBook);
 
-    return NextResponse.json({
-      message: 'Book approved successfully',
-      book: updatedBook,
-      approvedBy: user.id,
-      approvedAt: new Date().toISOString(),
-      notes
-    })
-
-  } catch (error) {
-    console.error('Error in POST /api/admin/books/[id]/approve:', error)
+  } catch (error: any) {
+    console.error('Error in POST /api/admin/books/[id]/approve:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
-    )
+    );
   }
 }

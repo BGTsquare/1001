@@ -348,48 +348,57 @@ function ReceiptUploader({ bookId, amount, paymentRequestId }: { bookId: string;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return setMessage('Please choose a file')
-    // Ensure we have an amount to submit with the receipt; server requires it
     if (amount == null) return setMessage('Missing amount — cannot submit receipt without order total')
 
     setIsSubmitting(true)
+    setMessage('Preparing upload...')
+
     try {
-      const fd = new FormData()
-      fd.append('receipt', file)
-      fd.append('bookId', bookId)
-      fd.append('amount', String(amount))
-      if (paymentRequestId) fd.append('paymentRequestId', paymentRequestId)
-      fd.append('method', 'manual')
+      // 1. Get signed URL from our server
+      const signedUrlRes = await fetch('/api/payments/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name }),
+      })
 
-      const res = await fetch('/api/payments/submit', { method: 'POST', body: fd })
-        if (!res.ok) {
-          // Try to parse server error details for a helpful message
-          let errText = 'Upload failed'
-          try {
-            const json = await res.json()
-            errText = json?.error || json?.message || JSON.stringify(json)
-          } catch (e) {
-            // ignore JSON parse errors
-          }
-          throw new Error(errText)
-        }
+      if (!signedUrlRes.ok) {
+        throw new Error('Could not get upload URL.')
+      }
 
-        // Optionally parse success response for extra details
-        try {
-          const body = await res.json().catch(() => null)
-          if (body && body.success) {
-            setMessage('Receipt uploaded — admin will verify shortly.')
-          } else if (body && body.error) {
-            setMessage(body.error)
-          } else {
-            setMessage('Receipt uploaded — admin will verify shortly.')
-          }
-          setMessage('Receipt uploaded — admin will verify shortly. Check your orders page for status updates.')
-        } catch (e) {
-          setMessage('Receipt uploaded — admin will verify shortly.')
-        }
+      const { signedUrl, filePath, token } = await signedUrlRes.json()
+
+      // 2. Upload file to Supabase Storage
+      setMessage('Uploading receipt...')
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': file.type,
+          'Authorization': `Bearer ${token}`
+        },
+        body: file,
+      })
+
+      if (!uploadRes.ok) {
+        throw new Error('Upload failed.')
+      }
+
+      // 3. Create submission record in our database
+      setMessage('Finalizing submission...')
+      const submissionRes = await fetch('/api/payments/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storage_path: filePath }),
+      })
+
+      if (!submissionRes.ok) {
+        throw new Error('Could not create submission record.')
+      }
+
+      setMessage('Receipt uploaded successfully! Admin will verify shortly.')
+      setFile(null)
     } catch (err: any) {
       console.error(err)
-      setMessage(err?.message || 'Upload failed')
+      setMessage(err?.message || 'An unexpected error occurred.')
     } finally {
       setIsSubmitting(false)
     }
@@ -404,7 +413,7 @@ function ReceiptUploader({ bookId, amount, paymentRequestId }: { bookId: string;
 
       <label
         htmlFor={`receipt-input-${bookId}`}
-        className="mt-2 flex items-center gap-4 w-full bg-gray-50 border-2 border-dashed border-blue-200 rounded-md p-4"
+        className="mt-2 flex items-center gap-4 w-full bg-gray-50 border-2 border-dashed border-blue-200 rounded-md p-4 cursor-pointer"
       >
         <span className="inline-flex items-center justify-center bg-blue-600 text-white rounded-md px-3 py-2 shadow-sm">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -424,6 +433,7 @@ function ReceiptUploader({ bookId, amount, paymentRequestId }: { bookId: string;
           className="sr-only"
           onChange={handleFile}
           aria-label="Upload payment receipt"
+          disabled={isSubmitting}
         />
       </label>
 

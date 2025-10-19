@@ -1,96 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
-// Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
-interface RouteParams {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export async function POST(request: NextRequest, context: RouteParams) {
-  const params = await context.params;
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const supabase = await createClient();
+
+    // Step 1: Get User
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Step 1 Failed: Unauthorized' }, { status: 401 });
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Step 2: Check Admin
+    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin', { user_id: user.id });
+    if (adminError) {
+        return NextResponse.json({ error: 'Step 2 Failed: RPC Error', details: adminError.message }, { status: 500 });
+    }
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Step 2 Failed: Forbidden' }, { status: 403 });
     }
 
-    // Parse request body
-    const { notes } = await request.json()
-
-    if (!notes || notes.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Rejection notes are required' },
-        { status: 400 }
-      )
+    // Step 3: Parse JSON
+    const { notes } = await request.json();
+    if (!notes) {
+        return NextResponse.json({ error: 'Step 3 Failed: Rejection notes are required' }, { status: 400 });
     }
+    const bookId = params.id;
 
-    // Check if book exists
-    const { data: book, error: bookError } = await supabase
-      .from('books')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (bookError || !book) {
-      return NextResponse.json({ error: 'Book not found' }, { status: 404 })
-    }
-
-    // In a real implementation, you would update a status field or approval table
-    // For now, we'll just update the updated_at timestamp to simulate rejection
-    const { data: updatedBook, error: updateError } = await supabase
+    // Step 4: Update Database
+    const { data: updatedBook, error: updateError } = await supabaseAdmin
       .from('books')
       .update({
-        updated_at: new Date().toISOString()
-        // In a real implementation, you might add:
-        // status: 'rejected',
-        // rejected_at: new Date().toISOString(),
-        // rejected_by: user.id,
-        // rejection_notes: notes
+        status: 'rejected',
+        reviewer_notes: notes,
+        reviewed_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', bookId)
       .select()
-      .single()
+      .single();
 
     if (updateError) {
-      console.error('Error rejecting book:', updateError)
-      return NextResponse.json({ error: 'Failed to reject book' }, { status: 500 })
+      return NextResponse.json({ error: 'Step 4 Failed: DB Update Error', details: updateError.message }, { status: 500 });
     }
 
-    // TODO: Send notification to book author about rejection with feedback
-    // TODO: Optionally move book back to draft status for revision
+    // Success
+    return NextResponse.json(updatedBook);
 
-    return NextResponse.json({
-      message: 'Book rejected',
-      book: updatedBook,
-      rejectedBy: user.id,
-      rejectedAt: new Date().toISOString(),
-      notes
-    })
-
-  } catch (error) {
-    console.error('Error in POST /api/admin/books/[id]/reject:', error)
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Overall Catch Block', details: error.message },
       { status: 500 }
-    )
+    );
   }
 }
